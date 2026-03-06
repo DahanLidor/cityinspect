@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CityInspect — Municipal Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2235;
+    --bg-input: #1e293b;
+    --border: #1e293b;
+    --border-focus: #3b82f6;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-blue: #3b82f6;
+    --accent-blue-glow: rgba(59, 130, 246, 0.25);
+    --accent-green: #10b981;
+    --accent-orange: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-purple: #8b5cf6;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Rubik', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background effect ─────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 20% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
+    z-index: -1;
+    animation: bgShift 20s ease infinite alternate;
+  }
+
+  @keyframes bgShift {
+    from { transform: translate(0, 0); }
+    to { transform: translate(-5%, -3%); }
+  }
+
+  /* ── Login Screen ─────────── */
+  .login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .login-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    animation: slideUp 0.5s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .login-logo {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 32px;
+    box-shadow: 0 8px 32px rgba(59,130,246,0.3);
+  }
+
+  .login-box h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+
+  .login-box p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+    text-align: right;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: 'Rubik', sans-serif;
+    font-size: 15px;
+    transition: border-color 0.2s;
+    direction: ltr;
+    text-align: left;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px var(--accent-blue-glow);
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: 'Rubik', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .login-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(59,130,246,0.4);
+  }
+
+  .login-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .login-error {
+    color: var(--accent-red);
+    font-size: 13px;
+    margin-top: 12px;
+    min-height: 20px;
+  }
+
+  /* ── Dashboard Layout ─────────── */
+  .dashboard { display: none; min-height: 100vh; }
+  .dashboard.active { display: block; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .topbar-logo {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .topbar-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    animation: pulse 2s ease infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+  }
+
+  .topbar-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .logout-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-family: 'Rubik', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .logout-btn:hover {
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+  }
+
+  .main-content {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── Stats Grid ─────────── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+    animation: fadeIn 0.6s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-focus);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .stat-card.total .stat-value { color: var(--accent-blue); }
+  .stat-card.critical .stat-value { color: var(--accent-red); }
+  .stat-card.active .stat-value { color: var(--accent-orange); }
+  .stat-card.resolved .stat-value { color: var(--accent-green); }
+
+  /* ── Map + Table Layout ─────────── */
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    animation: fadeIn 0.8s ease;
+  }
+
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .panel-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: var(--accent-blue-glow);
+    color: var(--accent-blue);
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Map ─────────── */
+  #map {
+    height: 460px;
+    width: 100%;
+    background: var(--bg-primary);
+  }
+
+  .leaflet-container {
+    background: var(--bg-primary) !important;
+    font-family: 'Rubik', sans-serif !important;
+  }
+
+  /* ── Incident Table ─────────── */
+  .incident-list {
+    height: 460px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .incident-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .incident-item:hover {
+    background: var(--bg-card-hover);
+  }
+
+  .severity-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .severity-dot.critical { background: var(--accent-red); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+  .severity-dot.high { background: var(--accent-orange); box-shadow: 0 0 8px rgba(245,158,11,0.4); }
+  .severity-dot.medium { background: var(--accent-orange); opacity: 0.7; }
+  .severity-dot.low { background: var(--accent-green); }
+
+  .incident-info { flex: 1; min-width: 0; }
+
+  .incident-type {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+
+  .incident-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 12px;
+    direction: ltr;
+    justify-content: flex-end;
+  }
+
+  .incident-severity {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .incident-severity.critical { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+  .incident-severity.high { background: rgba(245,158,11,0.15); color: var(--accent-orange); }
+  .incident-severity.medium { background: rgba(245,158,11,0.1); color: #d4a017; }
+  .incident-severity.low { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    padding: 40px;
+    text-align: center;
+  }
+
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  /* ── Loading ─────────── */
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent-blue);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Responsive ─────────── */
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .content-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 500px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .main-content { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">🏗️</div>
+    <h1>CityInspect</h1>
+    <p>מערכת זיהוי מפגעי תשתית עירונית</p>
+    <div class="form-group">
+      <label>שם משתמש</label>
+      <input type="text" id="username" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>סיסמה</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="handleLogin()">התחברות</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div class="dashboard" id="dashboard">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo">🏗️</div>
+      <span class="topbar-title">CityInspect Dashboard</span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-status">
+        <div class="live-dot"></div>
+        <span>מערכת פעילה</span>
+      </div>
+      <button class="logout-btn" onclick="handleLogout()">התנתקות</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-label">סה"כ אירועים</div>
+        <div class="stat-value" id="totalCount">—</div>
+        <div class="stat-sub">כל הדיווחים</div>
+      </div>
+      <div class="stat-card critical">
+        <div class="stat-label">קריטי</div>
+        <div class="stat-value" id="criticalCount">—</div>
+        <div class="stat-sub">דורש טיפול מיידי</div>
+      </div>
+      <div class="stat-card active">
+        <div class="stat-label">פעיל</div>
+        <div class="stat-value" id="activeCount">—</div>
+        <div class="stat-sub">בטיפול / ממתין</div>
+      </div>
+      <div class="stat-card resolved">
+        <div class="stat-label">טופל</div>
+        <div class="stat-value" id="resolvedCount">—</div>
+        <div class="stat-sub">אירועים שנסגרו</div>
+      </div>
+    </div>
+
+    <!-- Map + Table -->
+    <div class="content-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">🗺️ מפת אירועים</span>
+          <span class="panel-badge" id="mapBadge">0 אירועים</span>
+        </div>
+        <div id="map"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">📋 רשימת אירועים</span>
+          <span class="panel-badge" id="listBadge">0 אירועים</span>
+        </div>
+        <div class="incident-list" id="incidentList">
+          <div class="empty-state">
+            <div class="empty-state-icon">📡</div>
+            <div>טוען אירועים...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:8000/api/v1';
+let token = null;
+let map = null;
+let markersLayer = null;
+
+const HAZARD_NAMES = {
+  pothole: 'בור בכביש',
+  broken_sidewalk: 'מדרכה שבורה',
+  crack: 'סדק',
+  road_damage: 'נזק לכביש'
+};
+
+const SEVERITY_NAMES = {
+  critical: 'קריטי',
+  high: 'גבוה',
+  medium: 'בינוני',
+  low: 'נמוך'
+};
+
+const SEVERITY_COLORS = {
+  critical: '#ef4444',
+  high: '#f59e0b',
+  medium: '#d4a017',
+  low: '#10b981'
+};
+
+// ── Login ──────────────────────────
+
+async function handleLogin() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const errorEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  if (!username || !password) {
+    errorEl.textContent = 'נא למלא שם משתמש וסיסמה';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  errorEl.textContent = '';
+
+  try {
+    const resp = await fetch(`${API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    if (!resp.ok) {
+      const data = await resp.json();
+      throw new Error(data.detail || 'שגיאת התחברות');
+    }
+
+    const data = await resp.json();
+    token = data.access_token;
+    showDashboard();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'התחברות';
+  }
+}
+
+// Enter key to login
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
+    handleLogin();
+  }
+});
+
+function handleLogout() {
+  token = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('dashboard').classList.remove('active');
+}
+
+// ── Dashboard ──────────────────────
+
+function showDashboard() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashboard').classList.add('active');
+  initMap();
+  loadIncidents();
+}
+
+function initMap() {
+  if (map) return;
+
+  map = L.map('map', {
+    center: [32.18, 34.89],
+    zoom: 13,
+    zoomControl: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; CartoDB',
+    maxZoom: 19
+  }).addTo(map);
+
+  markersLayer = L.layerGroup().addTo(map);
+
+  setTimeout(() => map.invalidateSize(), 100);
+}
+
+async function loadIncidents() {
+  try {
+    const resp = await fetch(`${API_BASE}/incidents/map`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!resp.ok) throw new Error('Failed to load');
+
+    const incidents = await resp.json();
+    updateStats(incidents);
+    updateMap(incidents);
+    updateList(incidents);
+  } catch (err) {
+    document.getElementById('incidentList').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <div>שגיאה בטעינת אירועים</div>
+        <div style="font-size:12px; margin-top:8px; color:var(--text-muted)">${err.message}</div>
+      </div>`;
+  }
+}
+
+function updateStats(incidents) {
+  document.getElementById('totalCount').textContent = incidents.length;
+  document.getElementById('criticalCount').textContent =
+    incidents.filter(i => i.severity === 'critical').length;
+  document.getElementById('activeCount').textContent =
+    incidents.filter(i => !['resolved','dismissed'].includes(i.status)).length;
+  document.getElementById('resolvedCount').textContent =
+    incidents.filter(i => i.status === 'resolved').length;
+}
+
+function updateMap(incidents) {
+  markersLayer.clearLayers();
+
+  incidents.forEach(inc => {
+    const color = SEVERITY_COLORS[inc.severity] || '#3b82f6';
+    const marker = L.circleMarker([inc.latitude, inc.longitude], {
+      radius: inc.report_count > 1 ? 10 + inc.report_count : 8,
+      fillColor: color,
+      color: '#fff',
+      weight: 2,
+      opacity: 0.9,
+      fillOpacity: 0.8
+    });
+
+    marker.bindPopup(`
+      <div style="direction:rtl; font-family:Rubik,sans-serif; min-width:180px;">
+        <strong style="font-size:14px;">${HAZARD_NAMES[inc.hazard_type] || inc.hazard_type}</strong><br>
+        <span style="color:${color}; font-weight:600;">● ${SEVERITY_NAMES[inc.severity]}</span><br>
+        <span style="font-size:12px; color:#888;">
+          AI ביטחון: ${inc.ai_confidence ? Math.round(inc.ai_confidence * 100) + '%' : '—'}<br>
+          דיווחים: ${inc.report_count}
+        </span>
+      </div>
+    `);
+
+    markersLayer.addLayer(marker);
+  });
+
+  document.getElementById('mapBadge').textContent = `${incidents.length} אירועים`;
+
+  if (incidents.length > 0) {
+    const bounds = L.latLngBounds(incidents.map(i => [i.latitude, i.longitude]));
+    map.fitBounds(bounds, { padding: [40, 40] });
+  }
+}
+
+function updateList(incidents) {
+  const list = document.getElementById('incidentList');
+  document.getElementById('listBadge').textContent = `${incidents.length} אירועים`;
+
+  if (incidents.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🛣️</div>
+        <div>אין אירועים עדיין</div>
+        <div style="font-size:12px; margin-top:8px; color:var(--text-muted)">השתמש באפליקציה לדיווח חדש</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = incidents.map(inc => `
+    <div class="incident-item" onclick="flyTo(${inc.latitude}, ${inc.longitude})">
+      <div class="severity-dot ${inc.severity}"></div>
+      <div class="incident-info">
+        <div class="incident-type">${HAZARD_NAMES[inc.hazard_type] || inc.hazard_type}</div>
+        <div class="incident-meta">
+          <span>${inc.latitude.toFixed(4)}, ${inc.longitude.toFixed(4)}</span>
+          <span>${inc.report_count > 1 ? inc.report_count + ' דיווחים' : 'דיווח אחד'}</span>
+        </div>
+      </div>
+      <div class="incident-severity ${inc.severity}">${SEVERITY_NAMES[inc.severity]}</div>
+    </div>
+  `).join('');
+}
+
+function flyTo(lat, lng) {
+  if (map) {
+    map.flyTo([lat, lng], 17, { duration: 1 });
+  }
+}
+</script>
+</body>
+</html>

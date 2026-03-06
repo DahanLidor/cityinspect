@@ -1,0 +1,78 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL + PostGIS ─────────────────────────────────
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: cityinspect-db
+    environment:
+      POSTGRES_DB: cityinspect
+      POSTGRES_USER: cityinspect
+      POSTGRES_PASSWORD: cityinspect
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cityinspect -d cityinspect"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ── Redis ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: cityinspect-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Backend API ──────────────────────────────────────────
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: cityinspect-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://cityinspect:cityinspect@db:5432/cityinspect
+      REDIS_URL: redis://redis:6379/0
+      AI_SERVICE_URL: http://ai-service:8001
+      STORAGE_BACKEND: local
+      UPLOAD_DIR: /data/uploads
+      SECRET_KEY: dev-only-change-in-production
+      DEBUG: "true"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+
+  # ── AI Detection Service ─────────────────────────────────
+  ai-service:
+    build:
+      context: ../ai-service
+      dockerfile: Dockerfile
+    container_name: cityinspect-ai
+    ports:
+      - "8001:8001"
+    environment:
+      AI_MODEL_PATH: /models/yolov8_hazard.pt
+      AI_CONFIDENCE_THRESHOLD: "0.45"
+    volumes:
+      - models:/models
+
+volumes:
+  pgdata:
+  uploads:
+  models:
