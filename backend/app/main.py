@@ -64,3 +64,12 @@ async def health():
         version=settings.APP_VERSION,
         timestamp=datetime.now(timezone.utc),
     )
+
+
+from fastapi.responses import HTMLResponse
+from pathlib import Path
+
+@app.get("/", response_class=HTMLResponse, tags=["dashboard"])
+async def dashboard():
+    html_path = Path(__file__).parent / "dashboard.html"
+    return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
