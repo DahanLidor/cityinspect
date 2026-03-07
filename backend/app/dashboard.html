@@ -368,7 +368,7 @@ a{color:var(--blue-l);text-decoration:none}
 </div></div></div>
 
 <script>
-const API='https://cityinspect-production.up.railway.app/api/v1';
+const API='/api/v1';
 let token=null,allInc=[],maps={},layers={},heatLayers={},clusterLayers={},charts={},mapMode='markers',fullMapMode='markers',activeLayers=new Set(['pothole','broken_sidewalk','crack','road_damage']),refreshInterval=null;
 
 const H={pothole:'בור בכביש',broken_sidewalk:'מדרכה שבורה',crack:'סדק',road_damage:'נזק לכביש'};
@@ -567,7 +567,7 @@ async function showDetail(id){
         <span class="ib" style="background:var(--purple-g);color:var(--purple);font-size:12px;padding:5px 12px">AI ${inc.ai_confidence?Math.round(inc.ai_confidence*100)+'%':'—'}</span>
         <span class="ib" style="background:var(--cyan-g);color:var(--cyan);font-size:12px;padding:5px 12px">ID: ${inc.id.substring(0,8)}</span>
       </div>
-      ${inc.image_url?`<div class="detail-img"><img src="https://cityinspect-production.up.railway.app${inc.image_url}" onerror="this.parentElement.innerHTML='📷 תמונה לא זמינה'"/></div>`:''}
+      ${inc.image_url?`<div class="detail-img"><img src="${inc.image_url}" onerror="this.parentElement.innerHTML='📷 תמונה לא זמינה'"/></div>`:''}
       <div class="detail-grid">
         <div class="di"><div class="dl">📍 קו רוחב</div><div class="dv">${inc.latitude.toFixed(6)}</div></div>
         <div class="di"><div class="dl">📍 קו אורך</div><div class="dv">${inc.longitude.toFixed(6)}</div></div>
