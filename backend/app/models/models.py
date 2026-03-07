@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from geoalchemy2 import Geography
+# from geoalchemy2 import Geography
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -58,7 +58,7 @@ class Incident(Base):
     severity: Mapped[str] = mapped_column(Enum(*SEVERITIES, name="incident_severity"), default="medium")
     status: Mapped[str] = mapped_column(Enum(*STATUSES, name="incident_status"), default="reported")
 
-    location = mapped_column(Geography(geometry_type="POINT", srid=4326), nullable=False)
+    location = mapped_column(String(256), nullable=True)
     address: Mapped[Optional[str]] = mapped_column(String(512))
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
@@ -101,7 +101,7 @@ class IncidentReport(Base):
 
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
-    location = mapped_column(Geography(geometry_type="POINT", srid=4326), nullable=False)
+    location = mapped_column(String(256), nullable=True)
 
     image_url: Mapped[str] = mapped_column(String(1024), nullable=False)
     depth_map_url: Mapped[Optional[str]] = mapped_column(String(1024))

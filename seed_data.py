@@ -1,7 +1,7 @@
 """Seed realistic demo data for CityInspect across Kfar Saba & HaSharon area."""
 import requests, random, time
 
-API = "http://localhost:8000/api/v1"
+API = "https://cityinspect-production.up.railway.app/api/v1"
 
 # Login
 r = requests.post(f"{API}/login", json={"username": "admin", "password": "changeme123"})
