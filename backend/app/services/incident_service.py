@@ -63,12 +63,12 @@ class IncidentService:
         best_match = duplicates[0] if duplicates and duplicates[0].combined_score >= 0.65 else None
 
         # 5. Build the report record
-        point_wkt = f"SRID=4326;POINT({longitude} {latitude})"
+        location_str = f"POINT({longitude} {latitude})"
         report = IncidentReport(
             user_id=user_id,
             latitude=latitude,
             longitude=longitude,
-            location=point_wkt,
+            location=location_str,
             image_url=image_url,
             depth_map_url=depth_map_url,
             image_hash=img_hash,
@@ -100,7 +100,7 @@ class IncidentService:
             incident = Incident(
                 hazard_type=ai_result.hazard_type,
                 severity=severity,
-                location=point_wkt,
+                location=location_str,
                 latitude=latitude,
                 longitude=longitude,
                 ai_confidence=ai_result.confidence,
