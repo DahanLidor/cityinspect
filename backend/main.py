@@ -237,7 +237,7 @@ app = FastAPI(title="CityInspect API", version="2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # Serve frontend static files if they exist
-frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
+frontend_path = os.path.join(os.path.dirname(__file__), "frontend_build")
 if os.path.exists(frontend_path):
     app.mount("/static", StaticFiles(directory=os.path.join(frontend_path, "static")), name="static")
 
@@ -392,7 +392,7 @@ import pathlib
 
 @app.get("/{full_path:path}")
 def serve_frontend(full_path: str):
-    build_dir = pathlib.Path(__file__).parent / "frontend" / "build"
+    build_dir = pathlib.Path(__file__).parent / "frontend_build"
     file_path = build_dir / full_path
     if file_path.exists() and file_path.is_file():
         return FileResponse(str(file_path))
@@ -400,3 +400,11 @@ def serve_frontend(full_path: str):
     if index.exists():
         return FileResponse(str(index))
     raise HTTPException(404, "Frontend not found")
+
+@app.get("/")
+def root():
+    import pathlib
+    index = pathlib.Path(__file__).parent / "frontend_build" / "index.html"
+    if index.exists():
+        return FileResponse(str(index))
+    return {"status": "ok", "message": "CityInspect API v2.0 — frontend not found"}
