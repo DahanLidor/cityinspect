@@ -3,6 +3,3 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "cd backend && pip install -r requirements.txt && python seed_demo.py && uvicorn main:app --host 0.0.0.0 --port $PORT"
-healthcheckPath = "/health"
-healthcheckTimeout = 60
-restartPolicyType = "on_failure"
