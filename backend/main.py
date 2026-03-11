@@ -9,7 +9,8 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, 
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from pydantic import BaseModel
 from jose import jwt, JWTError
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 
 # ── Config ──────────────────────────────────────────────────
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cityinspect.db")
@@ -95,11 +96,13 @@ with engine.connect() as conn:
 Base.metadata.create_all(bind=engine)
 
 # ── Auth ─────────────────────────────────────────────────────
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+ph = PasswordHasher()
 security = HTTPBearer(auto_error=False)
 
-def hash_pw(pw):       return pwd_ctx.hash(pw)
-def verify_pw(pw, h):  return pwd_ctx.verify(pw, h)
+def hash_pw(pw):       return ph.hash(pw)
+def verify_pw(pw, h):
+    try: return ph.verify(h, pw)
+    except: return False
 def make_token(data):  return jwt.encode({**data, "exp": datetime.utcnow() + timedelta(days=30)}, SECRET_KEY, ALGORITHM)
 
 def get_db():
