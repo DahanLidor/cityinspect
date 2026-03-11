@@ -177,12 +177,12 @@ export default function DefectDrawer({ ticket, onClose, onStatusChange }) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 z-[9998] backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="fixed top-0 right-0 h-full w-full max-w-[480px] bg-slate-950 border-l border-slate-700 z-50 flex flex-col shadow-2xl overflow-hidden"
+      <div className="fixed top-0 right-0 h-full w-full max-w-[480px] bg-slate-950 border-l border-slate-700 z-[9999] flex flex-col shadow-2xl overflow-hidden"
            style={{ animation: 'slideIn 0.25s ease-out' }}>
 
         {/* Header */}
