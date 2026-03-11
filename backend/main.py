@@ -385,3 +385,18 @@ def get_upload(filename: str):
     path = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(path): raise HTTPException(404)
     return FileResponse(path)
+
+# ── Serve React Frontend ──────────────────────────────────────
+from fastapi.responses import HTMLResponse
+import pathlib
+
+@app.get("/{full_path:path}")
+def serve_frontend(full_path: str):
+    build_dir = pathlib.Path(__file__).parent / "frontend" / "build"
+    file_path = build_dir / full_path
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(str(file_path))
+    index = build_dir / "index.html"
+    if index.exists():
+        return FileResponse(str(index))
+    raise HTTPException(404, "Frontend not found")
