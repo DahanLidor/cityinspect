@@ -89,6 +89,7 @@ class WorkOrder(Base):
     priority    = Column(Integer, default=1)
     ticket_ids  = Column(Text, default="[]")
 
+Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 # ── Auth ─────────────────────────────────────────────────────
