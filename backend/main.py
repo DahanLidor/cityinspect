@@ -89,7 +89,9 @@ class WorkOrder(Base):
     priority    = Column(Integer, default=1)
     ticket_ids  = Column(Text, default="[]")
 
-Base.metadata.drop_all(bind=engine)
+with engine.connect() as conn:
+    conn.execute(__import__("sqlalchemy").text("DROP SCHEMA public CASCADE; CREATE SCHEMA public;"))
+    conn.commit()
 Base.metadata.create_all(bind=engine)
 
 # ── Auth ─────────────────────────────────────────────────────
