@@ -33,9 +33,9 @@ class APIService {
     private init() {
         // Default to localhost for simulator, adjust for device testing
         #if targetEnvironment(simulator)
-        baseURL = "http://localhost:8000/api/v1"
+        baseURL = "https://cityinspect-production.up.railway.app/api/v1"
         #else
-        baseURL = "http://YOUR_SERVER_IP:8000/api/v1"
+        baseURL = "https://cityinspect-production.up.railway.app/api/v1"
         #endif
     }
 
