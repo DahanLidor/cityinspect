@@ -49,7 +49,7 @@ export default function MapView({ onSelectTicket, wsEvent }) {
     const L = window.L;
     if (!L) return;
 
-    const map = L.map(mapRef.current, { zoomControl: false }).setView(TEL_AVIV, 14);
+    const map = L.map(mapRef.current, { zoomControl: false, scrollWheelZoom: false }).setView(TEL_AVIV, 14);
     L.tileLayer(TILE_URL, {
       attribution: '© <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
       maxZoom: 19,
