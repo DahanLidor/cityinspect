@@ -430,13 +430,9 @@ import pathlib
 @app.get("/dashboard")
 def serve_dashboard():
     """Serve the RoadSense operational dashboard with PCL viewer."""
-    dash_path = pathlib.Path(__file__).parent.parent / "dashboard" / "index.html"
-    if dash_path.exists():
-        return HTMLResponse(content=dash_path.read_text(encoding="utf-8"))
-    # Fallback: check sibling directory
-    dash_path2 = pathlib.Path(__file__).parent / ".." / ".." / "dashboard" / "index.html"
-    if dash_path2.exists():
-        return HTMLResponse(content=dash_path2.read_text(encoding="utf-8"))
+    p = os.path.join(os.path.dirname(__file__), "dashboard.html")
+    if os.path.exists(p):
+        with open(p, encoding="utf-8") as f: return HTMLResponse(content=f.read())
     return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
 
 # ── Serve React Frontend ──────────────────────────────────────
