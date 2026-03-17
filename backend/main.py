@@ -392,7 +392,7 @@ def get_upload(filename: str):
 def serve_dashboard():
     import pathlib
     from fastapi.responses import HTMLResponse
-    dash = pathlib.Path(__file__).parent.parent / "dashboard" / "index.html"
+    dash = pathlib.Path(__file__).parent / "dashboard" / "index.html"
     if dash.exists():
         return HTMLResponse(content=dash.read_text(encoding="utf-8"))
     return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
