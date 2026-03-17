@@ -390,6 +390,7 @@ def get_upload(filename: str):
 # ── Operational Dashboard ─────────────────────────────────────
 @app.get("/dashboard")
 def serve_dashboard():
+    from fastapi.responses import HTMLResponse
     p = os.path.join(os.path.dirname(__file__), "dashboard.html")
     if os.path.exists(p):
         with open(p, encoding="utf-8") as f:
