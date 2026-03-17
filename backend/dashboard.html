@@ -55,6 +55,14 @@ body{background:#0B1120;color:#f1f5f9;font-family:'Segoe UI',sans-serif;overflow
 .mi{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
 .mv{font-weight:700;font-size:12px;min-width:50px;text-align:left;direction:ltr}
 .mv.has{color:#22c55e}
+.imgs{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:6px}
+.img-thumb{width:120px;height:90px;border-radius:6px;object-fit:cover;border:2px solid transparent;cursor:pointer;flex-shrink:0}
+.img-thumb:hover{border-color:#3b82f6}
+.img-thumb.sel{border-color:#3b82f6;box-shadow:0 0 8px #3b82f640}
+.img-big{width:100%;border-radius:8px;margin-bottom:8px;max-height:200px;object-fit:cover;cursor:pointer}
+.img-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#000e;z-index:100;display:none;align-items:center;justify-content:center;cursor:zoom-out}
+.img-overlay.show{display:flex}
+.img-overlay img{max-width:90vw;max-height:90vh;border-radius:8px}
 .ps{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:#111827ee;border:1px solid #22c55e;border-radius:6px;padding:5px 14px;font-size:11px;color:#22c55e;display:none;z-index:5}
 .pcf{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:none;gap:6px;z-index:5}
 .pcf button{padding:6px 14px;border-radius:6px;font-size:11px;font-family:inherit;cursor:pointer;border:none;font-weight:600}
@@ -267,5 +275,6 @@ function pclVw(v){if(v==='top'){rX=-1.57;rY=0}else{rX=0;rY=0}}
 
 load();
 </script>
+<div class="img-overlay" id="imgOv" onclick="this.style.display='none'"><img id="imgOvS"/></div>
 </body>
 </html>
