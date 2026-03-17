@@ -395,7 +395,7 @@ def serve_dashboard():
     dash = pathlib.Path(__file__).parent / "dashboard" / "index.html"
     if dash.exists():
         return HTMLResponse(content=dash.read_text(encoding="utf-8"))
-    return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
+    import os; return HTMLResponse(f"<pre>CWD={os.getcwd()} FILE={__file__} LS_CWD={os.listdir(os.getcwd())} LS_PARENT={os.listdir(pathlib.Path(__file__).parent.parent) if pathlib.Path(__file__).parent.parent.exists() else "N/A"}</pre>")
 
 
 @app.get("/{full_path:path}")
