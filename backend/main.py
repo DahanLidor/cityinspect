@@ -386,9 +386,17 @@ def get_upload(filename: str):
     if not os.path.exists(path): raise HTTPException(404)
     return FileResponse(path)
 
-# ── Serve React Frontend ──────────────────────────────────────
-from fastapi.responses import HTMLResponse
-import pathlib
+
+# ── Operational Dashboard ─────────────────────────────────────
+@app.get("/dashboard")
+def serve_dashboard():
+    import pathlib
+    from fastapi.responses import HTMLResponse
+    dash = pathlib.Path(__file__).parent.parent / "dashboard" / "index.html"
+    if dash.exists():
+        return HTMLResponse(content=dash.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
+
 
 @app.get("/{full_path:path}")
 def serve_frontend(full_path: str):
