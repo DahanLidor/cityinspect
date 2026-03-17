@@ -392,7 +392,7 @@ async def run_pipeline(db, detection_id: int, ticket_id: int,
 
     if score_result["action"] == "delete":
         # Mark as duplicate — delete detection
-        db.execute(text("DELETE FROM detections WHERE id = :did"), {"did": detection_id})
+        db.execute(text("UPDATE detections SET notes = :n WHERE id = :did"), {"n": json.dumps({"status": "duplicate", "duplicate_of": dedup_result.get("duplicate_of")}, ensure_ascii=False), "did": detection_id})
         print(f"  🗑️ Detection #{detection_id} deleted (duplicate)")
     else:
         # Update ticket with best severity
