@@ -1,7 +1,7 @@
 import os, json, math, random, hashlib
 from datetime import datetime, timedelta
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, UploadFile, File, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -302,6 +302,21 @@ async def upload_detection(
     )
     db.add(d); db.commit(); db.refresh(d)
 
+    # Run AI pipeline in background
+    import asyncio
+    async def run_bg_pipeline(det_id, t_id, lt, ln, img, det_dict):
+        try:
+            from agents import run_pipeline
+            bg_db = SessionLocal()
+            await run_pipeline(bg_db, det_id, t_id, lt, ln, img, det_dict)
+            bg_db.close()
+        except Exception as e:
+            print(f"⚠️ Pipeline error: {e}")
+
+    det_dict = {"defect_depth_cm": defect_depth_cm, "defect_width_cm": defect_width_cm, 
+                "defect_length_cm": defect_length_cm, "surface_area_m2": area}
+    asyncio.create_task(run_bg_pipeline(d.id, ticket.id, lat, lng, image_url, det_dict))
+
     await hub.broadcast({"type": "new_detection", "ticket_id": ticket.id, "is_new_ticket": is_new,
                           "defect_type": defect_type, "severity": severity, "lat": lat, "lng": lng})
     return {"detection_id": d.id, "ticket_id": ticket.id, "is_new_ticket": is_new, "address": address}
@@ -369,6 +384,28 @@ def get_work_orders(db: Session = Depends(get_db), user: User = Depends(current_
     return [{"id": w.id, "title": w.title, "status": w.status, "team": w.team, "priority": w.priority,
              "created_at": w.created_at.isoformat(), "ticket_ids": json.loads(w.ticket_ids)} for w in db.query(WorkOrder).all()]
 
+# ── Pipeline ─────────────────────────────────────────────────
+@app.post("/api/pipeline/run/{detection_id}")
+async def run_pipeline_manual(detection_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Manually trigger the AI pipeline for a specific detection."""
+    d = db.query(Detection).filter_by(id=detection_id).first()
+    if not d: raise HTTPException(404, "Detection not found")
+    from agents import run_pipeline
+    det_dict = {"defect_depth_cm": d.defect_depth_cm, "defect_width_cm": d.defect_width_cm,
+                "defect_length_cm": d.defect_length_cm, "surface_area_m2": d.surface_area_m2}
+    result = await run_pipeline(db, d.id, d.ticket_id, d.lat, d.lng, d.image_url, det_dict)
+    return result
+
+@app.get("/api/pipeline/status/{detection_id}")
+def pipeline_status(detection_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Check pipeline results for a detection."""
+    d = db.query(Detection).filter_by(id=detection_id).first()
+    if not d: raise HTTPException(404)
+    try:
+        notes = json.loads(d.notes) if d.notes and d.notes.startswith("{") else {}
+    except: notes = {}
+    return {"detection_id": d.id, "caption": d.image_caption, "pipeline": notes}
+
 # ── WebSocket ─────────────────────────────────────────────────
 @app.websocket("/ws")
 async def websocket(ws: WebSocket):
@@ -386,17 +423,23 @@ def get_upload(filename: str):
     if not os.path.exists(path): raise HTTPException(404)
     return FileResponse(path)
 
-
 # ── Operational Dashboard ─────────────────────────────────────
+from fastapi.responses import HTMLResponse
+import pathlib
+
 @app.get("/dashboard")
 def serve_dashboard():
-    from fastapi.responses import HTMLResponse
-    p = os.path.join(os.path.dirname(__file__), "dashboard.html")
-    if os.path.exists(p):
-        with open(p, encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
+    """Serve the RoadSense operational dashboard with PCL viewer."""
+    dash_path = pathlib.Path(__file__).parent.parent / "dashboard" / "index.html"
+    if dash_path.exists():
+        return HTMLResponse(content=dash_path.read_text(encoding="utf-8"))
+    # Fallback: check sibling directory
+    dash_path2 = pathlib.Path(__file__).parent / ".." / ".." / "dashboard" / "index.html"
+    if dash_path2.exists():
+        return HTMLResponse(content=dash_path2.read_text(encoding="utf-8"))
     return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
 
+# ── Serve React Frontend ──────────────────────────────────────
 
 @app.get("/{full_path:path}")
 def serve_frontend(full_path: str):
