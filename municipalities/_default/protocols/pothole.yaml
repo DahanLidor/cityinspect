@@ -1,0 +1,116 @@
+protocol:
+  id: pothole
+  name: "תיקון בור"
+  defect_type: pothole
+  version: "1.0"
+
+  steps:
+    - id: manager_approval
+      name: "אישור מנהל עבודה"
+      owner_role: work_manager
+      allowed_actions: [approve, reject]
+      required_before_advance: [approve]
+      timeout_hours: 2
+      on_timeout: escalate_up
+      skip_allowed: false
+      message_template: notify_manager_new_ticket
+
+    - id: contractor_assignment
+      name: "הקצאת קבלן/צוות"
+      owner_role: work_manager
+      allowed_actions: [assign_contractor, assign_team]
+      required_before_advance: [assign_contractor]
+      auto_trigger: true
+      timeout_hours: 1
+      on_timeout: escalate_up
+      skip_allowed: false
+
+    - id: contractor_confirm
+      name: "אישור קבלן + זמן הגעה"
+      owner_role: contractor
+      allowed_actions: [confirm_time, request_reschedule, decline]
+      required_before_advance: [confirm_time]
+      timeout_hours: 3
+      on_timeout: reassign
+      skip_allowed: false
+      message_template: notify_contractor_assignment
+
+    - id: site_arrival
+      name: "הגעה לאתר"
+      owner_role: contractor
+      allowed_actions: [arrived]
+      required_gates:
+        - type: photo
+          label: "תמונת לפני"
+          key: photo_before
+      required_before_advance: [arrived]
+      skip_allowed: false
+      gate_event: true             # כולם מקבלים עדכון
+
+    - id: safety_setup
+      name: "הכנת תנאי בטיחות"
+      owner_role: field_worker
+      allowed_actions: [safety_ready]
+      required_gates:
+        - type: photo
+          label: "תמונת גדרות בטיחות"
+          key: photo_safety
+      required_before_advance: [safety_ready]
+      skip_allowed: false
+      regulation: "תקנת בטיחות 47-ג"
+
+    - id: execution
+      name: "ביצוע תיקון"
+      owner_role: field_worker
+      allowed_actions: [work_done]
+      required_gates:
+        - type: photo
+          label: "תמונה תוך כדי עבודה"
+          key: photo_during
+      required_before_advance: [work_done]
+      skip_allowed: false
+
+    - id: inspection
+      name: "אימות מפקח"
+      owner_role: inspector
+      allowed_actions: [approve, reject_redo]
+      required_gates:
+        - type: photo
+          label: "תמונת אחרי"
+          key: photo_after
+      required_before_advance: [approve]
+      on_reject_redo: execution    # חוזר לשלב ביצוע
+      timeout_hours: 4
+      on_timeout: escalate_up
+      skip_allowed: false
+
+    - id: close
+      name: "סגירת טיקט"
+      owner_role: work_manager
+      allowed_actions: [close]
+      auto_trigger: true
+      required_before_advance: [close]
+      skip_allowed: false
+      final_step: true
+
+  materials:
+    - name: "אספלט חם"
+      unit: kg
+      formula: "depth_cm * width_cm * length_cm * 0.024"  # kg
+    - name: "חומר הדבקה"
+      unit: liter
+      formula: "surface_area_m2 * 0.4"
+    - name: "גדרות בטיחות"
+      unit: unit
+      default: 6
+
+  team_required:
+    - role: field_worker
+      count: 2
+    - role: contractor
+      count: 1
+    - role: inspector
+      count: 1
+
+  estimated_hours: 2
+  estimated_cost_formula: "materials_cost + (team_size * hourly_rate * estimated_hours)"

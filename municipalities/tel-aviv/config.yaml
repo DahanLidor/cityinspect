@@ -1,0 +1,27 @@
+city:
+  id: tel-aviv
+  name: "עיריית תל אביב-יפו"
+  timezone: "Asia/Jerusalem"
+  language: he
+  working_hours:
+    sun_thu: "07:00-19:00"
+    fri: "07:00-14:00"
+    sat: null
+
+bot:
+  channel: whatsapp
+  auto_approve_low: true
+  require_photo_on_close: true
+  require_photo_on_arrival: true
+
+sla_hours:
+  critical: 4
+  high: 24
+  medium: 72
+  low: 336
+
+approval_rules:
+  critical: infrastructure_manager
+  high: work_manager
+  medium: work_manager
+  low: auto

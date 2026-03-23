@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3.10 -m pip install -q pyyaml jinja2 anthropic aiosqlite)",
+      "Bash(python3.10 -c \"import sys; print\\(sys.executable\\)\")",
+      "Read(//usr/local/Cellar/python@3.10/3.10.19_2/bin/**)"
+    ]
+  }
+}

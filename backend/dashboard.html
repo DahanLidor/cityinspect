@@ -118,7 +118,7 @@ const TL={pothole:'בור',road_crack:'סדק',broken_light:'פנס תקול',dr
 const XL={new:'חדש',verified:'מאומת',assigned:'הוקצה',in_progress:'בטיפול',resolved:'טופל'};
 
 async function auth(){
-  try{const r=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'admin',password:'admin123'})});
+  try{const r=await fetch(API+'/api/v1/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'admin',password:'admin123'})});
   if(r.ok){const d=await r.json();TK=d.access_token;return true}}catch(e){}return false}
 function H(){return TK?{Authorization:'Bearer '+TK}:{}}
 
@@ -126,14 +126,14 @@ async function load(){
   document.getElementById('lv').textContent='מתחבר...';
   if(!await auth()){document.getElementById('lv').textContent='שגיאה';return}
   document.getElementById('lv').textContent='Live — מחובר';
-  try{const r=await fetch(API+'/api/stats/summary',{headers:H()});if(r.ok){const s=await r.json();
+  try{const r=await fetch(API+'/api/v1/stats/summary',{headers:H()});if(r.ok){const s=await r.json();
     document.getElementById('m0').textContent=s.open_tickets||0;
     document.getElementById('m1').textContent=s.critical_tickets||0;
     document.getElementById('m2').textContent=s.total_tickets||0;
     document.getElementById('m4').textContent=s.by_status?.resolved||0;
     let det=0;Object.values(s.by_type||{}).forEach(v=>det+=v);document.getElementById('m3').textContent=det;
   }}catch(e){}
-  try{const r=await fetch(API+'/api/tickets?limit=200',{headers:H()});if(r.ok){allT=await r.json();
+  try{const r=await fetch(API+'/api/v1/tickets?page_size=200',{headers:H()});if(r.ok){const resp=await r.json();allT=resp.items||resp;
     filteredT=[...allT];
     buildMap();buildAlerts();buildTable();
   }}catch(e){}}

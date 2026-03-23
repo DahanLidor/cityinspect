@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     rate_limit_upload: str = "20/minute"
     rate_limit_default: str = "60/minute"
 
+    # ── WhatsApp ──────────────────────────────────────────────
+    whatsapp_token: str = ""
+    whatsapp_phone_number_id: str = ""
+    whatsapp_verify_token: str = "cityinspect_dev"
+
     @property
     def async_database_url(self) -> str:
         """Normalise DATABASE_URL to an async-compatible driver."""

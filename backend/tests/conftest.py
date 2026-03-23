@@ -68,9 +68,13 @@ async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     from app.models import User
 
     # Seed admin user
-    admin = User(username="testadmin", full_name="Test Admin", hashed_pw=hash_password("testpass"), role="admin")
-    db.add(admin)
-    await db.commit()
+    # Check if already exists (other tests in same session may have created it)
+    from sqlalchemy import select
+    existing = await db.execute(select(User).where(User.username == "testadmin"))
+    if not existing.scalar_one_or_none():
+        admin = User(username="testadmin", full_name="Test Admin", hashed_pw=hash_password("testpass"), role="admin")
+        db.add(admin)
+        await db.flush()
 
     app = create_app()
 

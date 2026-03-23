@@ -16,9 +16,11 @@ from slowapi.util import get_remote_address
 
 from app.core.config import get_settings
 from app.core.database import create_tables
+from app.core.events import bus
 from app.core.logging import get_logger, setup_logging
 from app.core.security import decode_token
 from app.routers import auth, detections, pipeline, stats, tickets, work_orders
+from app.routers import admin_chat, people, whatsapp, workflow
 from app.ws.hub import hub
 
 settings = get_settings()
@@ -50,7 +52,11 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     # ── Routers ───────────────────────────────────────────────────────────────
-    for router in [auth.router, detections.router, tickets.router, stats.router, work_orders.router, pipeline.router]:
+    for router in [
+        auth.router, detections.router, tickets.router, stats.router,
+        work_orders.router, pipeline.router,
+        people.router, workflow.router, whatsapp.router, admin_chat.router,
+    ]:
         app.include_router(router)
 
     # ── Static uploads ────────────────────────────────────────────────────────
@@ -118,9 +124,27 @@ def create_app() -> FastAPI:
         await create_tables()
         from app.core.database import _async_session
         from app.seed import seed
+        from app.services.people_engine import PeopleEngine
         async with _async_session() as db:
             await seed(db)
+            # Sync contacts from YAML on startup
+            engine = PeopleEngine(db)
+            try:
+                synced = await engine.sync_contacts("tel-aviv")
+                logger.info("Synced %d contacts for tel-aviv", synced)
+                await db.commit()
+            except Exception as exc:
+                logger.warning("Contact sync failed (non-fatal): %s", exc)
+                await db.rollback()
+        await bus.connect()
+        await bus.start_listeners()
         logger.info("Startup complete")
+
+    @app.on_event("shutdown")
+    async def shutdown() -> None:
+        await bus.stop()
+        await bus.disconnect()
+        logger.info("CityInspect shutdown complete")
 
     return app
 
