@@ -1,9 +1,23 @@
 version: "3.9"
 
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+asyncpg://cityinspect:cityinspect@db:5432/cityinspect
+  REDIS_URL: redis://redis:6379/0
+  UPLOAD_DIR: /data/uploads
+  SECRET_KEY: dev-only-change-in-production
+  DEBUG: "true"
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  GOOGLE_MAPS_KEY: ${GOOGLE_MAPS_KEY:-}
+  WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+  WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+  WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-cityinspect_dev}
+  ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:8000"]'
+
 services:
-  # ── PostgreSQL + PostGIS ─────────────────────────────────
+
+  # ── PostgreSQL ────────────────────────────────────────────
   db:
-    image: postgis/postgis:16-3.4
+    image: postgres:16-alpine
     container_name: cityinspect-db
     environment:
       POSTGRES_DB: cityinspect
@@ -13,14 +27,13 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ../database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cityinspect -d cityinspect"]
       interval: 5s
       timeout: 3s
       retries: 10
 
-  # ── Redis ────────────────────────────────────────────────
+  # ── Redis ─────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: cityinspect-redis
@@ -32,7 +45,7 @@ services:
       timeout: 3s
       retries: 5
 
-  # ── Backend API ──────────────────────────────────────────
+  # ── Backend API ───────────────────────────────────────────
   backend:
     build:
       context: ../backend
@@ -41,38 +54,70 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://cityinspect:cityinspect@db:5432/cityinspect
-      REDIS_URL: redis://redis:6379/0
-      AI_SERVICE_URL: http://ai-service:8001
-      STORAGE_BACKEND: local
-      UPLOAD_DIR: /data/uploads
-      SECRET_KEY: dev-only-change-in-production
-      DEBUG: "true"
+      <<: *backend-env
     volumes:
       - uploads:/data/uploads
+      - ../municipalities:/app/municipalities:ro
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ai-service:
-        condition: service_started
 
-  # ── AI Detection Service ─────────────────────────────────
-  ai-service:
+  # ── Celery Worker (pipeline + sla queues) ─────────────────
+  worker:
     build:
-      context: ../ai-service
+      context: ../backend
       dockerfile: Dockerfile
-    container_name: cityinspect-ai
-    ports:
-      - "8001:8001"
+    container_name: cityinspect-worker
+    command: celery -A worker.celery_app worker --loglevel=info -Q pipeline,sla -c 4
     environment:
-      AI_MODEL_PATH: /models/yolov8_hazard.pt
-      AI_CONFIDENCE_THRESHOLD: "0.45"
+      <<: *backend-env
     volumes:
-      - models:/models
+      - uploads:/data/uploads
+      - ../municipalities:/app/municipalities:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Celery Beat (scheduler) ───────────────────────────────
+  beat:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: cityinspect-beat
+    command: celery -A worker.celery_app beat --loglevel=info --scheduler celery.beat:PersistentScheduler
+    environment:
+      <<: *backend-env
+    volumes:
+      - beat_data:/app/celerybeat-schedule
+      - ../municipalities:/app/municipalities:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Flower (Celery monitoring UI) ─────────────────────────
+  flower:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: cityinspect-flower
+    command: celery -A worker.celery_app flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      <<: *backend-env
+    depends_on:
+      - redis
+    restart: unless-stopped
 
 volumes:
   pgdata:
   uploads:
-  models:
+  beat_data:

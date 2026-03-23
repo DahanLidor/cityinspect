@@ -1,11 +1,16 @@
 """
-Celery worker for reliable background pipeline execution.
+Celery worker + Beat schedule.
+
+Queues:
+  pipeline  — AI detection pipeline
+  sla       — SLA watcher (every 60s)
 
 Usage:
-  celery -A worker.celery_app worker --loglevel=info -Q pipeline
+  # Worker (processes tasks)
+  celery -A worker.celery_app worker --loglevel=info -Q pipeline,sla
 
-The pipeline is triggered by the API via .delay() which places a task on the
-Redis queue. Celery retries up to 3 times with exponential back-off on failure.
+  # Beat (schedules periodic tasks)
+  celery -A worker.celery_app beat --loglevel=info
 """
 from __future__ import annotations
 
@@ -13,6 +18,7 @@ import asyncio
 from typing import Any, Dict
 
 from celery import Celery
+from celery.schedules import crontab
 from celery.utils.log import get_task_logger
 
 from app.core.config import get_settings
@@ -30,14 +36,25 @@ celery_app.conf.update(
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
-    timezone="UTC",
+    timezone="Asia/Jerusalem",
     enable_utc=True,
     task_acks_late=True,
     task_reject_on_worker_lost=True,
     worker_prefetch_multiplier=1,
-    task_routes={"worker.run_pipeline_task": {"queue": "pipeline"}},
+    task_routes={
+        "worker.run_pipeline_task": {"queue": "pipeline"},
+        "worker.check_sla_task": {"queue": "sla"},
+    },
+    beat_schedule={
+        "sla-watcher": {
+            "task": "worker.check_sla_task",
+            "schedule": 60.0,  # every 60 seconds
+        },
+    },
 )
 
+
+# ── AI Pipeline ───────────────────────────────────────────────────────────────
 
 @celery_app.task(
     bind=True,
@@ -67,8 +84,34 @@ def run_pipeline_task(
 
     try:
         result = asyncio.run(_run())
-        logger.info(f"Pipeline task complete for detection #{detection_id}")
+        logger.info("Pipeline task complete for detection #%d", detection_id)
         return result
     except Exception as exc:
-        logger.error(f"Pipeline task failed for detection #{detection_id}: {exc}")
+        logger.error("Pipeline task failed for detection #%d: %s", detection_id, exc)
         raise self.retry(exc=exc, countdown=2 ** self.request.retries * 30)
+
+
+# ── SLA Watcher ───────────────────────────────────────────────────────────────
+
+@celery_app.task(
+    bind=True,
+    name="worker.check_sla_task",
+    max_retries=1,
+)
+def check_sla_task(self) -> Dict[str, Any]:
+    """Periodic task: scan for overdue steps and escalate."""
+    async def _run():
+        from app.core.database import _async_session
+        from app.services.sla_watcher import check_sla_violations
+
+        async with _async_session() as db:
+            return await check_sla_violations(db)
+
+    try:
+        result = asyncio.run(_run())
+        if result["escalated"] > 0:
+            logger.info("SLA watcher: escalated %d steps", result["escalated"])
+        return result
+    except Exception as exc:
+        logger.error("SLA watcher failed: %s", exc)
+        raise self.retry(exc=exc, countdown=30)

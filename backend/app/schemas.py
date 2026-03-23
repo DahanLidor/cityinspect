@@ -91,16 +91,21 @@ class TicketOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    city_id: str = "default"
     created_at: datetime
     updated_at: datetime
     defect_type: str
     severity: str
+    score: int = 0
     lat: float
     lng: float
     address: str
     status: str
     detection_count: int
-    work_order_id: Optional[int]
+    current_step_id: Optional[str] = None
+    protocol_id: Optional[str] = None
+    sla_deadline: Optional[datetime] = None
+    sla_breached: bool = False
     detections: List[DetectionOut] = []
 
 
@@ -129,9 +134,17 @@ class StatsResponse(BaseModel):
     open_tickets: int
     critical_tickets: int
     resolved_today: int
+    sla_breached: int = 0
+    overdue_steps: int = 0
     by_type: Dict[str, int]
     by_status: Dict[str, int]
     by_severity: Dict[str, int]
+    # Legacy compat fields
+    total_open: int = 0
+    critical_count: int = 0
+    in_progress: int = 0
+    detections_last_hour: int = 0
+    detections_per_hour: List[Dict[str, Any]] = []
 
 
 # ── Work Orders ───────────────────────────────────────────────────────────────
@@ -140,12 +153,13 @@ class WorkOrderOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    city_id: str = "default"
     created_at: datetime
-    title: str
+    ticket_id: Optional[int] = None
     status: str
-    team: str
-    priority: int
-    ticket_ids: List[int] = []
+    protocol_id: str = ""
+    estimated_hours: float = 0.0
+    estimated_cost: float = 0.0
 
 
 # ── Pipeline ──────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { updateTicket, getTicket } from '../api/client';
+import WorkflowTimeline from './WorkflowTimeline';
 
 const COMPASS = (deg) => {
   const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
@@ -9,32 +10,71 @@ const COMPASS = (deg) => {
 const fmt = (n, dec = 2) => (n ?? 0).toFixed(dec);
 
 const DEFECT_LABELS = {
-  pothole: '🕳️ Pothole',
-  road_crack: '⚠️ Road Crack',
-  broken_light: '💡 Broken Light',
-  drainage_blocked: '🌊 Drainage Blocked',
-  sidewalk: '🧱 Broken Sidewalk',
+  pothole:          '🕳️ בור בכביש',
+  road_crack:       '⚠️ סדק בכביש',
+  broken_light:     '💡 פנס תקול',
+  drainage_blocked: '🌊 ביוב חסום',
+  sidewalk:         '🧱 מדרכה שבורה',
 };
 
 const SEV_COLORS = {
-  critical: { bg: 'bg-red-600',    text: 'text-red-400',    label: '🔴 CRITICAL' },
-  high:     { bg: 'bg-orange-500', text: 'text-orange-400', label: '🟠 HIGH' },
-  medium:   { bg: 'bg-yellow-500', text: 'text-yellow-400', label: '🟡 MEDIUM' },
-  low:      { bg: 'bg-green-500',  text: 'text-green-400',  label: '🟢 LOW' },
+  critical: { bg: 'bg-red-600',    text: 'text-red-400',    label: '🔴 קריטי' },
+  high:     { bg: 'bg-orange-500', text: 'text-orange-400', label: '🟠 גבוה' },
+  medium:   { bg: 'bg-yellow-500', text: 'text-yellow-400', label: '🟡 בינוני' },
+  low:      { bg: 'bg-green-500',  text: 'text-green-400',  label: '🟢 נמוך' },
 };
 
-const STATUS_FLOW = ['new', 'verified', 'assigned', 'in_progress', 'resolved'];
+const STATUS_FLOW   = ['new', 'verified', 'assigned', 'in_progress', 'resolved'];
 const STATUS_LABELS = {
-  new: '🆕 New', verified: '✅ Verified', assigned: '📋 Assigned',
-  in_progress: '🔧 In Progress', resolved: '✔️ Resolved',
+  new: '🆕 חדש', verified: '✅ אומת', assigned: '📋 שויך',
+  in_progress: '🔧 בביצוע', resolved: '✔️ טופל',
 };
 
-function PotholeSection({ d }) {
+// ── AI Pipeline notes parser ──────────────────────────────────────────────────
+function AIPipelineSection({ notes }) {
+  let data = null;
+  try { data = JSON.parse(notes); } catch { return null; }
+  if (!data || typeof data !== 'object') return null;
+
+  const sections = [
+    { key: 'vlm',         icon: '🔍', title: 'VLM Agent' },
+    { key: 'environment', icon: '🌍', title: 'סביבה' },
+    { key: 'dedup',       icon: '🔄', title: 'כפילויות' },
+    { key: 'scorer',      icon: '📊', title: 'ציון סופי' },
+  ];
+
+  return (
+    <div className="space-y-2">
+      {sections.map(({ key, icon, title }) => {
+        const d = data[key];
+        if (!d) return null;
+        return (
+          <div key={key} className="bg-slate-900 border border-slate-700 rounded-xl p-3">
+            <div className="text-cyan-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">
+              {icon} {title}
+            </div>
+            <div className="space-y-1">
+              {Object.entries(d).map(([k, v]) => (
+                <div key={k} className="flex items-start gap-2 text-xs">
+                  <span className="text-slate-500 font-mono min-w-[100px] shrink-0">{k}</span>
+                  <span className="text-white break-all">
+                    {typeof v === 'object' ? JSON.stringify(v, null, 0).slice(0, 80) : String(v)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Geometry cross-section ────────────────────────────────────────────────────
+function GeometrySection({ d }) {
   const L = d.defect_length_cm || 0;
   const W = d.defect_width_cm || 0;
   const D = d.defect_depth_cm || 0;
-
-  // SVG cross-section
   const mid = 100;
   const halfW = Math.min(60, W * 0.5);
   const depth = Math.min(35, D * 1.5);
@@ -42,20 +82,18 @@ function PotholeSection({ d }) {
   return (
     <div className="bg-slate-900 border border-slate-600 rounded-xl p-4 space-y-3">
       <div className="flex items-center gap-2 text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest">
-        <span>📐</span><span>Defect Geometry</span>
-        <span className="ml-auto text-slate-500 font-normal normal-case">Estimated by sensor</span>
+        <span>📐</span><span>גיאומטריה</span>
+        <span className="ml-auto text-slate-500 font-normal normal-case text-xs">הערכת חיישן</span>
       </div>
-
-      {/* Table */}
       <table className="w-full text-sm font-mono">
         <tbody>
           {[
-            ['Length',         fmt(L, 1), 'cm'],
-            ['Width',          fmt(W, 1), 'cm'],
-            ['Depth',          fmt(D, 1), 'cm'],
-            ['Surface Area',   fmt(d.surface_area_m2, 4), 'm²'],
-            ['Volume',         fmt(d.defect_volume_m3, 6), 'm³'],
-            ['Repair Material',fmt(d.repair_material_m3, 6), 'm³'],
+            ['אורך',          fmt(L, 1), 'ס"מ'],
+            ['רוחב',          fmt(W, 1), 'ס"מ'],
+            ['עומק',          fmt(D, 1), 'ס"מ'],
+            ['שטח פנים',      fmt(d.surface_area_m2, 4), 'מ"ר'],
+            ['נפח',           fmt(d.defect_volume_m3, 6), 'מ"ק'],
+            ['חומר תיקון',    fmt(d.repair_material_m3, 6), 'מ"ק'],
           ].map(([label, val, unit]) => (
             <tr key={label} className="border-b border-slate-800">
               <td className="py-1.5 text-slate-400 pr-4">{label}</td>
@@ -65,83 +103,47 @@ function PotholeSection({ d }) {
           ))}
         </tbody>
       </table>
-
-      {/* SVG Cross-section */}
-      <div className="pt-2">
-        <div className="text-xs text-slate-500 font-mono mb-1">Cross-section view</div>
-        <svg viewBox="0 0 200 70" className="w-full h-16 rounded bg-slate-950">
-          {/* Road surface */}
-          <rect x="0" y="15" width="200" height="8" fill="#555" rx="1"/>
-          <text x="5" y="11" fill="#888" fontSize="7" fontFamily="monospace">ROAD SURFACE</text>
-          {/* Pothole */}
-          <path
-            d={`M ${mid - halfW},23 Q ${mid - halfW * 0.3},${23 + depth} ${mid},${23 + depth} Q ${mid + halfW * 0.3},${23 + depth} ${mid + halfW},23`}
-            stroke="#ef4444" strokeWidth="1.5" fill="#1e1e1e"
-          />
-          {/* Depth arrow */}
-          <line x1={mid} y1="24" x2={mid} y2={22 + depth} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="2,2"/>
-          <text x={mid + 3} y={24 + depth * 0.5} fill="#ef4444" fontSize="6" fontFamily="monospace">
-            ~{fmt(D, 0)}cm
-          </text>
-          {/* Width arrow */}
-          <line x1={mid - halfW} y1="60" x2={mid + halfW} y2="60" stroke="#3b82f6" strokeWidth="0.8" markerEnd="url(#arr)"/>
-          <text x={mid - 12} y="68" fill="#3b82f6" fontSize="6" fontFamily="monospace">{fmt(W, 0)}cm</text>
-        </svg>
-      </div>
+      <svg viewBox="0 0 200 70" className="w-full h-16 rounded bg-slate-950">
+        <rect x="0" y="15" width="200" height="8" fill="#555" rx="1"/>
+        <text x="5" y="11" fill="#888" fontSize="7" fontFamily="monospace">ROAD SURFACE</text>
+        <path
+          d={`M ${mid - halfW},23 Q ${mid - halfW * 0.3},${23 + depth} ${mid},${23 + depth} Q ${mid + halfW * 0.3},${23 + depth} ${mid + halfW},23`}
+          stroke="#ef4444" strokeWidth="1.5" fill="#1e1e1e"
+        />
+        <line x1={mid} y1="24" x2={mid} y2={22 + depth} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="2,2"/>
+        <text x={mid + 3} y={24 + depth * 0.5} fill="#ef4444" fontSize="6" fontFamily="monospace">~{fmt(D, 0)}ס"מ</text>
+        <line x1={mid - halfW} y1="60" x2={mid + halfW} y2="60" stroke="#3b82f6" strokeWidth="0.8"/>
+        <text x={mid - 12} y="68" fill="#3b82f6" fontSize="6" fontFamily="monospace">{fmt(W, 0)}ס"מ</text>
+      </svg>
     </div>
   );
 }
 
-function EnvSection({ d }) {
-  const hotAsphalt = (d.asphalt_temp_c || 0) > 30;
-  const conditionEmoji = {
-    Clear: '☀️', Cloudy: '☁️', Rain: '🌧️',
-    Fog: '🌫️', 'Partly Cloudy': '⛅',
-  }[d.weather_condition] || '🌤️';
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+const TABS = [
+  { id: 'info',     label: '📋 מידע' },
+  { id: 'workflow', label: '🔄 תהליך' },
+  { id: 'ai',       label: '🤖 AI' },
+];
 
-  return (
-    <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3">
-      <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest">
-        🌡️ Environmental Conditions
-      </div>
-      <div className="grid grid-cols-2 gap-y-2 text-sm">
-        {[
-          ['Air Temp',   `${fmt(d.ambient_temp_c, 1)}°C`, ''],
-          ['Asphalt',    `${fmt(d.asphalt_temp_c, 1)}°C`, hotAsphalt ? '⚠️' : ''],
-          ['Weather',    `${conditionEmoji} ${d.weather_condition}`, ''],
-          ['Wind',       `${fmt(d.wind_speed_kmh, 1)} km/h`, ''],
-          ['Humidity',   `${fmt(d.humidity_pct, 1)}%`, ''],
-          ['Visibility', `${(d.visibility_m || 0).toLocaleString()} m`, ''],
-        ].map(([label, val, warn]) => (
-          <div key={label} className="flex flex-col">
-            <span className="text-slate-500 text-xs font-mono">{label}</span>
-            <span className={`font-semibold ${warn ? 'text-orange-400' : 'text-white'}`}>
-              {val} {warn}
-            </span>
-          </div>
-        ))}
-      </div>
-      {hotAsphalt && (
-        <div className="text-xs text-orange-400 bg-orange-950 border border-orange-800 rounded-lg px-3 py-2 font-mono">
-          ⚠️ Asphalt temp above 30°C may accelerate defect growth
-        </div>
-      )}
-    </div>
-  );
-}
-
+// ── Main Drawer ───────────────────────────────────────────────────────────────
 export default function DefectDrawer({ ticket, onClose, onStatusChange }) {
   const [fullTicket, setFullTicket] = useState(ticket);
   const [loading, setLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('info');
 
-  useEffect(() => {
-    if (!ticket) return;
+  const loadTicket = () => {
     setLoading(true);
     getTicket(ticket.id)
       .then(setFullTicket)
       .catch(() => setFullTicket(ticket))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!ticket) return;
+    loadTicket();
   }, [ticket?.id]);
 
   if (!ticket) return null;
@@ -149,12 +151,14 @@ export default function DefectDrawer({ ticket, onClose, onStatusChange }) {
   const t = fullTicket;
   const d = t.detections?.[0] || {};
   const sev = SEV_COLORS[t.severity] || SEV_COLORS.low;
+  const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(t.status) + 1];
+  const currentIdx = STATUS_FLOW.indexOf(t.status);
 
   const handleStatus = async (newStatus) => {
     setStatusLoading(true);
     try {
       const updated = await updateTicket(t.id, newStatus);
-      setFullTicket({ ...t, status: newStatus });
+      setFullTicket(prev => ({ ...prev, status: newStatus }));
       onStatusChange?.(updated);
     } finally {
       setStatusLoading(false);
@@ -163,175 +167,216 @@ export default function DefectDrawer({ ticket, onClose, onStatusChange }) {
 
   const formatDate = (iso) => {
     if (!iso) return '—';
-    const dt = new Date(iso);
-    return dt.toLocaleString('en-GB', {
+    return new Date(iso).toLocaleString('he-IL', {
       weekday: 'long', day: '2-digit', month: 'short',
-      year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+      year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   };
 
-  const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(t.status) + 1];
-  const currentIdx = STATUS_FLOW.indexOf(t.status);
-
   return (
     <>
-      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/40 z-[9998] backdrop-blur-sm" onClick={onClose} />
+
       <div
-        className="fixed inset-0 bg-black/40 z-[9998] backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div className="fixed top-0 right-0 h-full w-full max-w-[480px] bg-slate-950 border-l border-slate-700 z-[9999] flex flex-col shadow-2xl overflow-hidden"
-           style={{ animation: 'slideIn 0.25s ease-out' }}>
-
+        className="fixed top-0 right-0 h-full w-full max-w-[500px] bg-slate-950 border-l border-slate-700 z-[9999] flex flex-col shadow-2xl overflow-hidden"
+        style={{ animation: 'slideIn 0.25s ease-out' }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900 shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{DEFECT_LABELS[t.defect_type]?.split(' ')[0]}</span>
-            <div>
-              <div className="text-white font-bold text-sm">Ticket #{t.id}</div>
-              <div className="text-slate-400 text-xs font-mono">{t.address}</div>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-2xl shrink-0">{DEFECT_LABELS[t.defect_type]?.split(' ')[0]}</span>
+            <div className="min-w-0">
+              <div className="text-white font-bold text-sm flex items-center gap-2">
+                טיקט #{t.id}
+                {t.sla_breached && (
+                  <span className="text-xs bg-red-900 text-red-300 px-1.5 py-0.5 rounded-full border border-red-700 animate-pulse">
+                    SLA הופר
+                  </span>
+                )}
+              </div>
+              <div className="text-slate-400 text-xs font-mono truncate">{t.address}</div>
             </div>
           </div>
           <button onClick={onClose}
-            className="text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-700 text-xl transition-colors">
+            className="text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-700 text-xl transition-colors shrink-0">
             ✕
           </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        {/* Tabs */}
+        <div className="flex border-b border-slate-800 bg-slate-900 shrink-0">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'text-white border-b-2 border-blue-500 bg-slate-950'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          {loading && (
-            <div className="flex items-center justify-center h-24 text-slate-400">
-              <div className="animate-spin text-2xl">⚙️</div>
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
+
+          {/* ── INFO TAB ── */}
+          {activeTab === 'info' && (
+            <div className="px-5 py-4 space-y-4">
+              {loading && (
+                <div className="flex items-center justify-center h-24 text-slate-400">
+                  <div className="animate-spin text-2xl">⚙️</div>
+                </div>
+              )}
+
+              {d.image_url && (
+                <div className="rounded-xl overflow-hidden border border-slate-700">
+                  <img src={d.image_url} alt={d.image_caption || 'תמונת תקלה'}
+                    className="w-full h-48 object-cover"
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                  {d.image_caption && (
+                    <div className="px-3 py-1.5 bg-slate-900 text-slate-400 text-xs italic">{d.image_caption}</div>
+                  )}
+                </div>
+              )}
+
+              {/* Badges */}
+              <div className="flex gap-2 flex-wrap">
+                <span className={`${sev.bg} text-white text-xs font-bold px-3 py-1 rounded-full`}>{sev.label}</span>
+                <span className="bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  {DEFECT_LABELS[t.defect_type] || t.defect_type}
+                </span>
+                <span className="bg-slate-800 text-slate-300 text-xs px-3 py-1 rounded-full border border-slate-600">
+                  {STATUS_LABELS[t.status] || t.status}
+                </span>
+                {t.score > 0 && (
+                  <span className={`text-xs px-3 py-1 rounded-full border font-mono font-bold ${
+                    t.score >= 80 ? 'bg-red-950 text-red-300 border-red-700' :
+                    t.score >= 60 ? 'bg-orange-950 text-orange-300 border-orange-700' :
+                    'bg-slate-800 text-slate-300 border-slate-600'
+                  }`}>
+                    ⚡ {t.score}/100
+                  </span>
+                )}
+                {t.detection_count > 1 && (
+                  <span className="bg-purple-900 text-purple-300 text-xs px-3 py-1 rounded-full border border-purple-700">
+                    📡 {t.detection_count} דיווחים
+                  </span>
+                )}
+              </div>
+
+              {/* Location */}
+              <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-2">
+                <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest mb-2">📍 מיקום ושעה</div>
+                <div className="text-sm space-y-1.5">
+                  <div className="flex items-start gap-2">
+                    <span className="text-slate-500 w-16 shrink-0">תאריך</span>
+                    <span className="text-white">{formatDate(d.detected_at || t.created_at)}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-slate-500 w-16 shrink-0">כתובת</span>
+                    <span className="text-white">{t.address}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 w-16 shrink-0">GPS</span>
+                    <span className="text-slate-300 font-mono text-xs">{fmt(t.lat, 6)}, {fmt(t.lng, 6)}</span>
+                    <button onClick={() => navigator.clipboard.writeText(`${t.lat},${t.lng}`)}
+                      className="text-xs text-blue-400 hover:text-blue-300 ml-auto">📋</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vehicle */}
+              <div className="bg-slate-900 border border-slate-700 rounded-xl p-4">
+                <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest mb-3">🚗 רכב ומערכת</div>
+                <div className="grid grid-cols-2 gap-y-2 text-sm">
+                  {[
+                    ['מזהה רכב',    d.vehicle_id || '—'],
+                    ['דגם',         d.vehicle_model || '—'],
+                    ['מהירות',      `${fmt(d.vehicle_speed_kmh, 1)} קמ"ש`],
+                    ['כיוון',       `${fmt(d.vehicle_heading_deg, 0)}° (${COMPASS(d.vehicle_heading_deg || 0)})`],
+                    ['חיישן',       d.vehicle_sensor_version || '—'],
+                    ['מדווח ע"י',   d.reported_by || 'simulator'],
+                  ].map(([label, val]) => (
+                    <div key={label} className="flex flex-col">
+                      <span className="text-slate-500 text-xs font-mono">{label}</span>
+                      <span className="text-white font-medium text-xs">{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <GeometrySection d={d} />
+
+              {/* Environment */}
+              <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3">
+                <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest">🌡️ תנאי סביבה</div>
+                <div className="grid grid-cols-2 gap-y-2 text-sm">
+                  {[
+                    ['טמפ׳ אוויר',  `${fmt(d.ambient_temp_c, 1)}°C`],
+                    ['טמפ׳ אספלט',  `${fmt(d.asphalt_temp_c, 1)}°C`],
+                    ['מזג אוויר',   d.weather_condition || '—'],
+                    ['רוח',         `${fmt(d.wind_speed_kmh, 1)} קמ"ש`],
+                    ['לחות',        `${fmt(d.humidity_pct, 1)}%`],
+                    ['ראות',        `${(d.visibility_m || 0).toLocaleString()} מ׳`],
+                  ].map(([label, val]) => (
+                    <div key={label} className="flex flex-col">
+                      <span className="text-slate-500 text-xs font-mono">{label}</span>
+                      <span className="text-white font-medium text-xs">{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status progress */}
+              <div className="bg-slate-900 border border-slate-700 rounded-xl p-4">
+                <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest mb-3">📊 התקדמות</div>
+                <div className="flex items-center gap-1">
+                  {STATUS_FLOW.map((s, i) => (
+                    <div key={s} className="flex items-center gap-1 flex-1">
+                      <div className={`h-2 rounded-full flex-1 transition-colors ${i <= currentIdx ? 'bg-blue-500' : 'bg-slate-700'}`} />
+                      {i === currentIdx && <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between mt-1">
+                  {STATUS_FLOW.map((s, i) => (
+                    <span key={s} className={`text-xs font-mono ${i <= currentIdx ? 'text-blue-400' : 'text-slate-600'}`}>
+                      {s.replace('_', ' ')}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Photo */}
-          {d.image_url && (
-            <div className="rounded-xl overflow-hidden border border-slate-700">
-              <img
-                src={d.image_url}
-                alt={d.image_caption || 'Defect photo'}
-                className="w-full h-48 object-cover"
-                onError={e => { e.target.style.display = 'none'; }}
+          {/* ── WORKFLOW TAB ── */}
+          {activeTab === 'workflow' && (
+            <div className="px-5 py-4">
+              <WorkflowTimeline
+                ticket={t}
+                onWorkflowStarted={() => loadTicket()}
               />
-              {d.image_caption && (
-                <div className="px-3 py-1.5 bg-slate-900 text-slate-400 text-xs italic">
-                  {d.image_caption}
+            </div>
+          )}
+
+          {/* ── AI TAB ── */}
+          {activeTab === 'ai' && (
+            <div className="px-5 py-4 space-y-3">
+              <div className="text-cyan-400 font-mono text-xs font-bold uppercase tracking-widest">🤖 תוצאות Pipeline AI</div>
+              {d.notes ? (
+                <AIPipelineSection notes={d.notes} />
+              ) : (
+                <div className="text-slate-500 text-sm text-center py-8">
+                  אין תוצאות AI לטיקט זה עדיין
                 </div>
               )}
             </div>
           )}
-
-          {/* Severity + type badges */}
-          <div className="flex gap-2 flex-wrap">
-            <span className={`${sev.bg} text-white text-xs font-bold px-3 py-1 rounded-full`}>
-              {sev.label}
-            </span>
-            <span className="bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-full">
-              {DEFECT_LABELS[t.defect_type] || t.defect_type}
-            </span>
-            <span className="bg-slate-800 text-slate-300 text-xs px-3 py-1 rounded-full border border-slate-600">
-              {STATUS_LABELS[t.status] || t.status}
-            </span>
-            {t.detection_count > 1 && (
-              <span className="bg-purple-900 text-purple-300 text-xs px-3 py-1 rounded-full border border-purple-700">
-                📡 {t.detection_count} reports
-              </span>
-            )}
-          </div>
-
-          {/* Time & Location */}
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-2">
-            <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest mb-2">
-              📍 Location & Time
-            </div>
-            <div className="text-sm space-y-1.5">
-              <div className="flex items-start gap-2">
-                <span className="text-slate-500 w-20 shrink-0">Date</span>
-                <span className="text-white">{formatDate(d.detected_at || t.created_at)}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-slate-500 w-20 shrink-0">Address</span>
-                <span className="text-white">{t.address}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-slate-500 w-20 shrink-0">GPS</span>
-                <span className="text-slate-300 font-mono text-xs">
-                  {fmt(t.lat, 6)}, {fmt(t.lng, 6)}
-                </span>
-                <button
-                  onClick={() => navigator.clipboard.writeText(`${t.lat},${t.lng}`)}
-                  className="text-xs text-blue-400 hover:text-blue-300 ml-auto"
-                >📋</button>
-              </div>
-            </div>
-          </div>
-
-          {/* Vehicle & System */}
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-4">
-            <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest mb-3">
-              🚗 Vehicle & System
-            </div>
-            <div className="grid grid-cols-2 gap-y-2 text-sm">
-              {[
-                ['Vehicle ID',   d.vehicle_id || '—'],
-                ['Model',        d.vehicle_model || '—'],
-                ['Speed',        `${fmt(d.vehicle_speed_kmh, 1)} km/h`],
-                ['Heading',      `${fmt(d.vehicle_heading_deg, 0)}° (${COMPASS(d.vehicle_heading_deg || 0)})`],
-                ['Sensor',       d.vehicle_sensor_version || '—'],
-                ['Reported by',  d.reported_by || 'simulator'],
-              ].map(([label, val]) => (
-                <div key={label} className="flex flex-col">
-                  <span className="text-slate-500 text-xs font-mono">{label}</span>
-                  <span className="text-white font-medium text-xs">{val}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Engineering Geometry */}
-          <PotholeSection d={d} />
-
-          {/* Environmental */}
-          <EnvSection d={d} />
-
-          {/* Notes */}
-          {d.notes && (
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-4">
-              <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest mb-2">
-                📝 Field Notes
-              </div>
-              <p className="text-slate-300 text-sm italic">"{d.notes}"</p>
-            </div>
-          )}
-
-          {/* Status Progress */}
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-4">
-            <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest mb-3">
-              📊 Status Progress
-            </div>
-            <div className="flex items-center gap-1">
-              {STATUS_FLOW.map((s, i) => (
-                <div key={s} className="flex items-center gap-1 flex-1">
-                  <div className={`h-2 rounded-full flex-1 transition-colors ${i <= currentIdx ? 'bg-blue-500' : 'bg-slate-700'}`} />
-                  {i === currentIdx && (
-                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-1">
-              {STATUS_FLOW.map((s, i) => (
-                <span key={s} className={`text-xs font-mono ${i <= currentIdx ? 'text-blue-400' : 'text-slate-600'}`}>
-                  {s.replace('_', ' ')}
-                </span>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Action bar */}
@@ -342,12 +387,10 @@ export default function DefectDrawer({ ticket, onClose, onStatusChange }) {
               disabled={statusLoading}
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
-              {statusLoading ? '⏳ Updating...' : `→ Move to: ${STATUS_LABELS[nextStatus]}`}
+              {statusLoading ? '⏳ מעדכן...' : `→ העבר ל: ${STATUS_LABELS[nextStatus]}`}
             </button>
           ) : (
-            <div className="text-center text-green-400 font-mono text-sm py-2">
-              ✔️ Ticket Resolved
-            </div>
+            <div className="text-center text-green-400 font-mono text-sm py-2">✔️ טיקט טופל</div>
           )}
         </div>
       </div>
