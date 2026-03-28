@@ -72,30 +72,43 @@ async def run_pipeline(
             caption = f"{caption} | סיכון: {liability}"
 
         notes_payload = json.dumps(
-            {"vlm": vlm_result, "environment": env_result, "dedup": dedup_result, "score": score_result},
+            {"vlm": vlm_result, "environment": env_result, "dedup": dedup_result, "scorer": score_result},
             ensure_ascii=False,
         )[:4000]
 
+        # Pull real weather values from environment agent
+        weather = env_result.get("weather", {})
         await db.execute(
             text(
-                "UPDATE detections SET image_caption=:cap, notes=:notes, pipeline_status='done' WHERE id=:id"
+                "UPDATE detections SET image_caption=:cap, notes=:notes, pipeline_status='done',"
+                " ambient_temp_c=:temp, weather_condition=:wc, wind_speed_kmh=:wind, humidity_pct=:hum"
+                " WHERE id=:id"
             ),
-            {"cap": caption[:500], "notes": notes_payload, "id": detection_id},
+            {
+                "cap": caption[:500],
+                "notes": notes_payload,
+                "temp": weather.get("temperature_c") or 25,
+                "wc": weather.get("weather_label") or "Clear",
+                "wind": weather.get("wind_speed_kmh") or 10,
+                "hum": weather.get("humidity_pct") or 50,
+                "id": detection_id,
+            },
         )
 
-        # Update ticket severity & type (unless duplicate or no hazard)
+        # Update ticket severity, type & score
         severity = score_result["severity"]
+        final_score = score_result["final_score"]
         if severity not in ("duplicate", "none"):
             db_type = _HAZARD_TYPE_MAP.get(vlm_result.get("hazard_type", ""), None)
             if db_type:
                 await db.execute(
-                    text("UPDATE tickets SET severity=:sev, defect_type=:dtype WHERE id=:tid"),
-                    {"sev": severity, "dtype": db_type, "tid": ticket_id},
+                    text("UPDATE tickets SET severity=:sev, defect_type=:dtype, score=:score WHERE id=:tid"),
+                    {"sev": severity, "dtype": db_type, "score": final_score, "tid": ticket_id},
                 )
             else:
                 await db.execute(
-                    text("UPDATE tickets SET severity=:sev WHERE id=:tid"),
-                    {"sev": severity, "tid": ticket_id},
+                    text("UPDATE tickets SET severity=:sev, score=:score WHERE id=:tid"),
+                    {"sev": severity, "score": final_score, "tid": ticket_id},
                 )
 
         await db.commit()

@@ -73,7 +73,7 @@ async def agent_vlm_analyze(image_url: str) -> Dict[str, Any]:
                     "content-type": "application/json",
                 },
                 json={
-                    "model": "claude-sonnet-4-20250514",
+                    "model": "claude-opus-4-5",
                     "max_tokens": 1000,
                     "messages": [{
                         "role": "user",

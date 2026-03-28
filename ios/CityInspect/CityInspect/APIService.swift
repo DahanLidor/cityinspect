@@ -115,7 +115,8 @@ class APIService {
         lat: Double, lng: Double,
         image: UIImage,
         pointCloudData: Data?,
-        useCaseId: String
+        useCaseId: String,
+        imageCaption: String = ""
     ) async throws -> UploadResponse {
         guard let jpeg = image.jpegData(compressionQuality: 0.85) else {
             throw APIError.serverError("Failed to encode image")
@@ -139,6 +140,7 @@ class APIService {
         field("vehicle_model", UIDevice.current.model)
         field("vehicle_sensor_version", "lidar-v1.0")
         field("reported_by", username)
+        if !imageCaption.isEmpty { field("image_caption", imageCaption) }
 
         body += "--\(boundary)\r\nContent-Disposition: form-data; name=\"image\"; filename=\"scan.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".data(using: .utf8)!
         body += jpeg
