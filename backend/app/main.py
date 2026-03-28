@@ -138,6 +138,7 @@ def create_app() -> FastAPI:
             "ALTER TABLE tickets ADD COLUMN sla_deadline TIMESTAMP WITH TIME ZONE",
             "ALTER TABLE tickets ADD COLUMN sla_breached BOOLEAN DEFAULT FALSE",
             "ALTER TABLE tickets ADD COLUMN city_id VARCHAR(64) DEFAULT 'default'",
+            "ALTER TABLE tickets ADD COLUMN score INTEGER DEFAULT 0",
             "ALTER TABLE tickets ADD COLUMN detection_count INTEGER DEFAULT 1",
             # detections — extra metadata columns
             "ALTER TABLE detections ADD COLUMN city_id VARCHAR(64) DEFAULT 'default'",
