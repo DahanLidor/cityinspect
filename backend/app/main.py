@@ -129,6 +129,9 @@ def create_app() -> FastAPI:
         for stmt in [
             # users
             "ALTER TABLE users ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT now()",
+            # tickets — base timestamp columns
+            "ALTER TABLE tickets ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT now()",
+            "ALTER TABLE tickets ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()",
             # tickets — workflow state columns
             "ALTER TABLE tickets ADD COLUMN current_step_id VARCHAR(64)",
             "ALTER TABLE tickets ADD COLUMN protocol_id VARCHAR(64)",
