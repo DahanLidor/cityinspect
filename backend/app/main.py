@@ -8,7 +8,7 @@ import pathlib
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -68,14 +68,6 @@ def create_app() -> FastAPI:
             from fastapi import HTTPException
             raise HTTPException(404)
         return FileResponse(path)
-
-    # ── Operational dashboard ─────────────────────────────────────────────────
-    @app.get("/dashboard")
-    def serve_dashboard() -> HTMLResponse:
-        p = pathlib.Path(__file__).parent.parent / "dashboard.html"
-        if p.exists():
-            return HTMLResponse(content=p.read_text(encoding="utf-8"))
-        return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
 
     # ── Health check ──────────────────────────────────────────────────────────
     @app.get("/health")
