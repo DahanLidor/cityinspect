@@ -37,6 +37,7 @@ async def find_or_create_ticket(
     lat: float,
     lng: float,
     address: str,
+    city_id: str = "tel-aviv",
 ) -> Tuple[Ticket, bool]:
     """
     Returns (ticket, is_new).
@@ -71,7 +72,7 @@ async def find_or_create_ticket(
         logger.info("Existing ticket updated", extra={"ticket_id": best.id, "distance_m": round(best_dist, 1)})
         return best, False
 
-    ticket = Ticket(defect_type=defect_type, severity=severity, lat=lat, lng=lng, address=address)
+    ticket = Ticket(city_id=city_id, defect_type=defect_type, severity=severity, lat=lat, lng=lng, address=address)
     db.add(ticket)
     await db.flush()  # get id without committing
     logger.info("New ticket created", extra={"ticket_id": ticket.id})

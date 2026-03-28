@@ -64,6 +64,7 @@ async def upload_detection(
     wind_speed_kmh: float = Form(10.0),
     humidity_pct: float = Form(50.0),
     visibility_m: int = Form(1000),
+    city_id: str = Form("tel-aviv"),
     image: Optional[UploadFile] = File(None),
     point_cloud: Optional[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db),
@@ -82,7 +83,7 @@ async def upload_detection(
 
     # 2. Find or create ticket
     address = f"{lat:.4f}, {lng:.4f}"
-    ticket, is_new = await find_or_create_ticket(db, defect_type, severity, lat, lng, address)
+    ticket, is_new = await find_or_create_ticket(db, defect_type, severity, lat, lng, address, city_id=city_id)
 
     # 3. Create detection
     detection = await create_detection(
