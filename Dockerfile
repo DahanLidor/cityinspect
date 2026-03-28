@@ -1,17 +1,23 @@
-FROM node:18-slim AS frontend
-WORKDIR /frontend
-COPY frontend/package.json .
-RUN npm install
-COPY frontend/ .
-RUN npm run build
+FROM python:3.12-slim
 
-FROM python:3.11-slim
 WORKDIR /app
-RUN mkdir -p /data/uploads
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python dependencies
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY backend/main.py .
-# Dashboard v2
-COPY dashboard/ ./dashboard/
-COPY --from=frontend /frontend/build ./frontend/build
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}
+
+# Application code
+COPY backend/ .
+
+# Municipality configs
+COPY municipalities/ /municipalities/
+
+# Create upload directory
+RUN mkdir -p /data/uploads
+
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
