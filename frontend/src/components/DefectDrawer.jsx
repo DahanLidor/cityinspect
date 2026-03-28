@@ -70,6 +70,92 @@ function AIPipelineSection({ notes }) {
   );
 }
 
+// ── Environment section ───────────────────────────────────────────────────────
+function EnvironmentSection({ d }) {
+  let env = null;
+  try { env = d.notes ? JSON.parse(d.notes)?.environment : null; } catch {}
+
+  const weather = env?.weather || {};
+  const address = env?.address || {};
+  const pois    = env?.nearby_places || [];
+  const risks   = env?.risk_factors  || [];
+  const envScore = env?.environment_score;
+
+  // Fallback to detection columns if no pipeline data yet
+  const temp    = weather.temperature_c  ?? d.ambient_temp_c;
+  const wLabel  = weather.weather_label  ?? d.weather_condition;
+  const wind    = weather.wind_speed_kmh ?? d.wind_speed_kmh;
+  const hum     = weather.humidity_pct   ?? d.humidity_pct;
+  const precip  = weather.precipitation_mm;
+
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest">🌍 סביבה ומזג אוויר</div>
+        {envScore != null && (
+          <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full border ${
+            envScore >= 60 ? 'bg-red-950 text-red-300 border-red-700' :
+            envScore >= 30 ? 'bg-orange-950 text-orange-300 border-orange-700' :
+            'bg-slate-800 text-slate-300 border-slate-600'
+          }`}>סיכון סביבתי {envScore}/100</span>
+        )}
+      </div>
+
+      {/* Address from OSM */}
+      {address.road && (
+        <div className="text-xs text-slate-300 bg-slate-800 rounded-lg px-3 py-2">
+          📍 {[address.road, address.suburb, address.city].filter(Boolean).join(', ')}
+        </div>
+      )}
+
+      {/* Weather grid */}
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        {[
+          ['🌡️', 'טמפ׳', temp != null ? `${fmt(temp, 1)}°C` : '—'],
+          ['🌬️', 'רוח',  wind != null ? `${fmt(wind, 0)} קמ"ש` : '—'],
+          ['💧', 'לחות', hum  != null ? `${fmt(hum, 0)}%` : '—'],
+          ['☁️', 'מזג',  wLabel || '—'],
+          ...(precip != null ? [['🌧️', 'משקעים', `${fmt(precip, 1)} מ"מ`]] : []),
+          ...(d.visibility_m ? [['👁️', 'ראות', `${(d.visibility_m).toLocaleString()} מ׳`]] : []),
+        ].map(([icon, label, val]) => (
+          <div key={label} className="bg-slate-800 rounded-lg p-2 text-center">
+            <div className="text-base">{icon}</div>
+            <div className="text-slate-500 font-mono text-[10px] mt-0.5">{label}</div>
+            <div className="text-white font-bold text-[11px] mt-0.5">{val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Risk factors */}
+      {risks.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-slate-500 font-mono text-xs uppercase tracking-wider">⚠️ גורמי סיכון</div>
+          <div className="flex flex-wrap gap-1">
+            {risks.map((r, i) => (
+              <span key={i} className="text-xs bg-orange-950 text-orange-300 border border-orange-800 px-2 py-0.5 rounded-full">{r}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Nearby POIs */}
+      {pois.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-slate-500 font-mono text-xs uppercase tracking-wider">🏢 מקומות בסביבה</div>
+          <div className="space-y-1 max-h-28 overflow-y-auto">
+            {pois.slice(0, 6).map((p, i) => (
+              <div key={i} className="flex items-center justify-between text-xs bg-slate-800 rounded-lg px-2 py-1">
+                <span className="text-slate-300">{p.name || p.type}</span>
+                <span className="text-slate-500 font-mono">{p.distance_m} מ׳</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Geometry cross-section ────────────────────────────────────────────────────
 function GeometrySection({ d }) {
   const L = d.defect_length_cm || 0;
@@ -312,25 +398,7 @@ export default function DefectDrawer({ ticket, onClose, onStatusChange }) {
 
               <GeometrySection d={d} />
 
-              {/* Environment */}
-              <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3">
-                <div className="text-cyan-400 font-mono text-sm font-bold uppercase tracking-widest">🌡️ תנאי סביבה</div>
-                <div className="grid grid-cols-2 gap-y-2 text-sm">
-                  {[
-                    ['טמפ׳ אוויר',  `${fmt(d.ambient_temp_c, 1)}°C`],
-                    ['טמפ׳ אספלט',  `${fmt(d.asphalt_temp_c, 1)}°C`],
-                    ['מזג אוויר',   d.weather_condition || '—'],
-                    ['רוח',         `${fmt(d.wind_speed_kmh, 1)} קמ"ש`],
-                    ['לחות',        `${fmt(d.humidity_pct, 1)}%`],
-                    ['ראות',        `${(d.visibility_m || 0).toLocaleString()} מ׳`],
-                  ].map(([label, val]) => (
-                    <div key={label} className="flex flex-col">
-                      <span className="text-slate-500 text-xs font-mono">{label}</span>
-                      <span className="text-white font-medium text-xs">{val}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <EnvironmentSection d={d} />
 
               {/* Status progress */}
               <div className="bg-slate-900 border border-slate-700 rounded-xl p-4">
