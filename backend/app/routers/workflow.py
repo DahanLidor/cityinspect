@@ -107,6 +107,10 @@ async def open_ticket_workflow(
     except WorkflowError as exc:
         await db.rollback()
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    except Exception as exc:
+        await db.rollback()
+        logger.error("open_ticket failed for ticket %d: %s", ticket_id, exc, exc_info=True)
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"שגיאת שרת: {exc}")
 
 
 @router.get("/tickets/{ticket_id}/steps", response_model=list[StepOut])
