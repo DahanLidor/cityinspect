@@ -128,13 +128,54 @@ def create_app() -> FastAPI:
         from app.core.database import _engine as _eng
         async with _eng.begin() as conn:
             for stmt in [
+                # users
+                "ALTER TABLE users ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT now()",
+                # tickets — workflow state columns
+                "ALTER TABLE tickets ADD COLUMN current_step_id VARCHAR(64)",
+                "ALTER TABLE tickets ADD COLUMN protocol_id VARCHAR(64)",
+                "ALTER TABLE tickets ADD COLUMN sla_deadline TIMESTAMP WITH TIME ZONE",
+                "ALTER TABLE tickets ADD COLUMN sla_breached BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE tickets ADD COLUMN city_id VARCHAR(64) DEFAULT 'default'",
+                "ALTER TABLE tickets ADD COLUMN detection_count INTEGER DEFAULT 1",
+                # detections — extra metadata columns
+                "ALTER TABLE detections ADD COLUMN city_id VARCHAR(64) DEFAULT 'default'",
+                "ALTER TABLE detections ADD COLUMN image_hash VARCHAR(64) DEFAULT ''",
+                "ALTER TABLE detections ADD COLUMN image_caption VARCHAR(512) DEFAULT ''",
+                "ALTER TABLE detections ADD COLUMN point_cloud_url VARCHAR(512) DEFAULT ''",
+                "ALTER TABLE detections ADD COLUMN pipeline_status VARCHAR(16) DEFAULT 'pending'",
+                "ALTER TABLE detections ADD COLUMN reported_by VARCHAR(32) DEFAULT 'system'",
+                "ALTER TABLE detections ADD COLUMN reporter_user_id INTEGER REFERENCES users(id)",
+                "ALTER TABLE detections ADD COLUMN vehicle_id VARCHAR(64) DEFAULT 'UNKNOWN'",
+                "ALTER TABLE detections ADD COLUMN vehicle_model VARCHAR(128) DEFAULT 'Unknown'",
+                "ALTER TABLE detections ADD COLUMN vehicle_sensor_version VARCHAR(32) DEFAULT 'v1.0'",
+                "ALTER TABLE detections ADD COLUMN vehicle_speed_kmh REAL DEFAULT 0",
+                "ALTER TABLE detections ADD COLUMN vehicle_heading_deg REAL DEFAULT 0",
+                "ALTER TABLE detections ADD COLUMN defect_length_cm REAL DEFAULT 0",
+                "ALTER TABLE detections ADD COLUMN defect_width_cm REAL DEFAULT 0",
+                "ALTER TABLE detections ADD COLUMN defect_depth_cm REAL DEFAULT 0",
+                "ALTER TABLE detections ADD COLUMN defect_volume_m3 REAL DEFAULT 0",
+                "ALTER TABLE detections ADD COLUMN repair_material_m3 REAL DEFAULT 0",
+                "ALTER TABLE detections ADD COLUMN surface_area_m2 REAL DEFAULT 0",
+                "ALTER TABLE detections ADD COLUMN ambient_temp_c REAL DEFAULT 25",
+                "ALTER TABLE detections ADD COLUMN asphalt_temp_c REAL DEFAULT 28",
+                "ALTER TABLE detections ADD COLUMN weather_condition VARCHAR(32) DEFAULT 'Clear'",
+                "ALTER TABLE detections ADD COLUMN wind_speed_kmh REAL DEFAULT 10",
+                "ALTER TABLE detections ADD COLUMN humidity_pct REAL DEFAULT 50",
+                "ALTER TABLE detections ADD COLUMN visibility_m INTEGER DEFAULT 1000",
+                "ALTER TABLE detections ADD COLUMN notes TEXT DEFAULT ''",
+                "ALTER TABLE detections ADD COLUMN ticket_id INTEGER REFERENCES tickets(id)",
+                # workflow_steps — response time metrics
                 "ALTER TABLE workflow_steps ADD COLUMN response_time_min REAL",
-                "ALTER TABLE workflow_steps ADD COLUMN sla_met INTEGER",
+                "ALTER TABLE workflow_steps ADD COLUMN sla_met BOOLEAN",
+                # people
+                "ALTER TABLE people ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT now()",
+                "ALTER TABLE people ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()",
+                "ALTER TABLE people ADD COLUMN current_workload INTEGER DEFAULT 0",
             ]:
                 try:
                     await conn.execute(_text(stmt))
                 except Exception:
-                    pass  # column already exists
+                    pass  # column already exists or table doesn't exist yet
         from app.core.database import _async_session
         from app.seed import seed
         from app.services.people_engine import PeopleEngine
