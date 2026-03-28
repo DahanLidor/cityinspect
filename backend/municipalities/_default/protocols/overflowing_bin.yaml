@@ -1,0 +1,52 @@
+protocol:
+  id: overflowing_bin
+  name: "פינוי פח אשפה עמוס"
+  defect_type: overflowing_bin
+  version: "1.0"
+
+  steps:
+    - id: manager_approval
+      name: "אישור מנהל"
+      owner_role: work_manager
+      allowed_actions: [approve, reject]
+      required_before_advance: [approve]
+      timeout_hours: 1
+      on_timeout: escalate_up
+      skip_allowed: false
+      message_template: notify_manager_new_ticket
+
+    - id: sanitation_dispatch
+      name: "שיגור צוות סניטציה"
+      owner_role: work_manager
+      allowed_actions: [assign_contractor]
+      required_before_advance: [assign_contractor]
+      auto_trigger: true
+      timeout_hours: 1
+      on_timeout: escalate_up
+      skip_allowed: false
+
+    - id: collection
+      name: "פינוי הפח"
+      owner_role: field_worker
+      allowed_actions: [collected]
+      required_gates:
+        - type: photo
+          label: "תמונה לאחר פינוי"
+          key: photo_after
+      required_before_advance: [collected]
+      skip_allowed: false
+
+    - id: close
+      name: "סגירת טיקט"
+      owner_role: work_manager
+      allowed_actions: [close]
+      auto_trigger: true
+      required_before_advance: [close]
+      skip_allowed: false
+      final_step: true
+
+  team_required:
+    - role: field_worker
+      count: 1
+
+  estimated_hours: 0.5

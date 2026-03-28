@@ -1,0 +1,56 @@
+use_cases:
+  - id: pothole
+    name_he: בור בכביש
+    name_en: Pothole
+    icon: "🕳️"
+    severity_default: high
+    vlm_description: "A hole, depression, or cavity in the road surface that could damage vehicles or injure pedestrians. Look for missing asphalt, craters, or depressions in paved roads."
+
+  - id: broken_sidewalk
+    name_he: מדרכה שבורה
+    name_en: Broken Sidewalk
+    icon: "🧱"
+    severity_default: medium
+    vlm_description: "Broken, cracked, displaced, or uplifted sidewalk tiles or concrete that pose a tripping hazard to pedestrians."
+
+  - id: street_light
+    name_he: עמוד תאורה תקול
+    name_en: Street Light Defect
+    icon: "💡"
+    severity_default: medium
+    vlm_description: "A broken, leaning, damaged, or non-functioning street light pole or fixture. Includes shattered lenses, exposed wiring, or tilted poles."
+
+  - id: leaning_pole
+    name_he: עמוד עקום
+    name_en: Leaning Pole
+    icon: "⚠️"
+    severity_default: high
+    vlm_description: "A utility pole, street sign pole, or any vertical pole that is visibly leaning, bent, or at risk of falling into the road or onto pedestrians."
+
+  - id: overflowing_bin
+    name_he: פח אשפה עמוס
+    name_en: Overflowing Bin
+    icon: "🗑️"
+    severity_default: low
+    vlm_description: "A public garbage or recycling bin that is overflowing with waste, or has trash scattered around it on the ground."
+
+  - id: faded_crosswalk
+    name_he: מעבר חציה דהוי
+    name_en: Faded Crosswalk
+    icon: "🚶"
+    severity_default: medium
+    vlm_description: "A pedestrian crosswalk where the white or yellow road markings are significantly faded, worn, or missing, reducing visibility for drivers."
+
+  - id: fallen_tree
+    name_he: עץ מפריע לציבור
+    name_en: Obstructing Tree
+    icon: "🌳"
+    severity_default: medium
+    vlm_description: "A fallen tree, large broken branch, or severely overgrown tree that is blocking or obstructing a public road, sidewalk, or right-of-way."
+
+  - id: illegal_dumping
+    name_he: השלכת פסולת
+    name_en: Illegal Dumping
+    icon: "📦"
+    severity_default: medium
+    vlm_description: "Illegally dumped waste, furniture, construction debris, or large quantities of cardboard boxes left on public property."

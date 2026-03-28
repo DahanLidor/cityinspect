@@ -1,0 +1,117 @@
+people:
+  - id: david_levi
+    name: "דוד לוי"
+    role: city_manager
+    manager_id: null
+    phone: "03-7240001"
+    whatsapp_id: "972501000001"
+    email: "d.levi@tel-aviv.gov.il"
+    specialties: []
+    availability:
+      sun_thu: "08:00-18:00"
+      fri: "08:00-13:00"
+
+  - id: moshe_cohen
+    name: "משה כהן"
+    role: infrastructure_manager
+    manager_id: david_levi
+    phone: "052-1000002"
+    whatsapp_id: "972521000002"
+    email: "m.cohen@tel-aviv.gov.il"
+    specialties: [pothole, road_crack, drainage_blocked, sidewalk]
+    availability:
+      sun_thu: "07:00-17:00"
+      fri: "07:00-13:00"
+
+  - id: yossi_levy
+    name: "יוסי לוי"
+    role: work_manager
+    manager_id: moshe_cohen
+    phone: "052-1000003"
+    whatsapp_id: "972521000003"
+    email: "y.levy@tel-aviv.gov.il"
+    specialties: [pothole, road_crack, sidewalk]
+    availability:
+      sun_thu: "07:00-17:00"
+      fri: "07:00-13:00"
+
+  - id: dana_mizrahi
+    name: "דנה מזרחי"
+    role: work_manager
+    manager_id: moshe_cohen
+    phone: "052-1000004"
+    whatsapp_id: "972521000004"
+    email: "d.mizrahi@tel-aviv.gov.il"
+    specialties: [drainage_blocked, broken_light]
+    availability:
+      sun_thu: "07:00-17:00"
+      fri: "07:00-13:00"
+
+  - id: muki_inspector
+    name: "מוקי אברהם"
+    role: inspector
+    manager_id: moshe_cohen
+    phone: "052-1000005"
+    whatsapp_id: "972521000005"
+    specialties: [pothole, road_crack, sidewalk, drainage_blocked]
+    availability:
+      sun_thu: "07:00-17:00"
+      fri: "07:00-13:00"
+
+  - id: avi_contractor
+    name: "אבי כהן — כביש מהיר בע״מ"
+    role: contractor
+    manager_id: yossi_levy
+    phone: "054-2000001"
+    whatsapp_id: "972542000001"
+    email: "avi@kvish-mahir.co.il"
+    specialties: [pothole, road_crack]
+    availability:
+      sun_thu: "06:00-18:00"
+      fri: "06:00-13:00"
+
+  - id: danny_contractor
+    name: "דני שלום — תשתיות ד.ש"
+    role: contractor
+    manager_id: dana_mizrahi
+    phone: "054-2000002"
+    whatsapp_id: "972542000002"
+    specialties: [drainage_blocked, sidewalk]
+    availability:
+      sun_thu: "07:00-17:00"
+      fri: "07:00-13:00"
+
+  - id: worker_rami
+    name: "רמי גל"
+    role: field_worker
+    manager_id: avi_contractor
+    phone: "050-3000001"
+    whatsapp_id: "972503000001"
+    specialties: [pothole, road_crack]
+    availability:
+      sun_thu: "06:00-16:00"
+      fri: "06:00-13:00"
+
+  - id: worker_eli
+    name: "אלי דהן"
+    role: field_worker
+    manager_id: avi_contractor
+    phone: "050-3000002"
+    whatsapp_id: "972503000002"
+    specialties: [pothole, road_crack, sidewalk]
+    availability:
+      sun_thu: "06:00-16:00"
+      fri: "06:00-13:00"
+
+teams:
+  - id: team_roads_north
+    name: "צוות כבישים צפון"
+    manager_id: yossi_levy
+    members: [avi_contractor, worker_rami, worker_eli]
+    specialties: [pothole, road_crack]
+
+  - id: team_infra_south
+    name: "צוות תשתיות דרום"
+    manager_id: dana_mizrahi
+    members: [danny_contractor]
+    specialties: [drainage_blocked, sidewalk]

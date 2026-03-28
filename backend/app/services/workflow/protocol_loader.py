@@ -14,7 +14,19 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-_MUNICIPALITIES_ROOT = Path(__file__).parents[4] / "municipalities"
+def _find_municipalities_root() -> Path:
+    # Try /municipalities (Docker bind), then relative to project root, then inside backend/
+    candidates = [
+        Path("/municipalities"),
+        Path(__file__).parents[4] / "municipalities",
+        Path(__file__).parents[3] / "municipalities",
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return candidates[0]  # fallback
+
+_MUNICIPALITIES_ROOT = _find_municipalities_root()
 
 
 def _deep_merge(base: dict, override: dict) -> dict:

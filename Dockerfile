@@ -11,11 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Application code
+# Application code (includes municipalities/ inside backend/)
 COPY backend/ .
-
-# Municipality configs
-COPY municipalities/ /municipalities/
 
 # Create upload directory
 RUN mkdir -p /data/uploads
