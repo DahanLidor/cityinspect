@@ -103,7 +103,7 @@ body{background:#0B1120;color:#f1f5f9;font-family:'Segoe UI',sans-serif;overflow
     <button class="flt" style="cursor:pointer;color:#94a3b8" onclick="clearFilters()">נקה</button>
   </div>
   <div style="font-size:13px;font-weight:600;margin-bottom:10px">תור עדיפויות — <span id="tCount">0</span> טיקטים</div>
-  <div class="cd" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th></th><th>מפגע</th><th>חומרה</th><th>ציון</th><th>כתובת</th><th>דיווחים</th><th>תאריך</th><th>סטטוס</th></tr></thead><tbody id="tBody"></tbody></table></div>
+  <div class="cd" style="padding:0;overflow:hidden"><table class="tbl"><thead><tr><th></th><th>מפגע</th><th>חומרה</th><th>ציון</th><th>כתובת</th><th>דיווחים</th><th>תאריך</th><th>סטטוס</th><th></th></tr></thead><tbody id="tBody"></tbody></table></div>
   <div class="det" id="detP"></div>
 </div>
 </div>
@@ -114,8 +114,8 @@ const API=window.location.origin;
 let TK=null,allT=[],filteredT=[];
 const SC={critical:'#ef4444',high:'#f59e0b',medium:'#3b82f6',low:'#22c55e'};
 const SL={critical:'קריטי',high:'גבוה',medium:'בינוני',low:'נמוך'};
-const TL={pothole:'בור',road_crack:'סדק',broken_light:'פנס תקול',drainage_blocked:'ביוב חסום',sidewalk:'מדרכה שבורה'};
-const XL={new:'חדש',verified:'מאומת',assigned:'הוקצה',in_progress:'בטיפול',resolved:'טופל'};
+const TL={pothole:'בור בכביש',road_crack:'סדק בכביש',broken_light:'פנס תקול',drainage_blocked:'ביוב חסום',sidewalk:'מדרכה שבורה',broken_sidewalk:'מדרכה שבורה',street_light:'עמוד תאורה תקול',leaning_pole:'עמוד עקום',overflowing_bin:'פח אשפה עמוס',faded_crosswalk:'מעבר חציה דהוי',fallen_tree:'עץ מפריע לציבור',illegal_dumping:'השלכת פסולת',unknown:'לא מזוהה'};
+const XL={new:'חדש',verified:'מאומת',assigned:'הוקצה',in_progress:'בטיפול',resolved:'טופל',closed:'סגור',rejected:'נדחה',expired:'פג תוקף'};
 
 async function auth(){
   try{const r=await fetch(API+'/api/v1/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'admin',password:'admin123'})});
@@ -193,7 +193,8 @@ function buildTable(){
     const p=pri(t),pc=p>80?'#ef4444':p>60?'#f59e0b':p>40?'#3b82f6':'#22c55e';
     const sc=t.status==='new'?'#f59e0b':t.status==='in_progress'?'#3b82f6':'#22c55e';
     const dt=t.created_at?new Date(t.created_at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-    return`<tr onclick="sel(${t.id})" id="r${t.id}"><td><div class="dot" style="background:${SC[t.severity]}"></div></td><td style="font-weight:500">${TL[t.defect_type]||t.defect_type}</td><td><span class="sev" style="background:${SC[t.severity]}20;color:${SC[t.severity]}">${SL[t.severity]||t.severity}</span></td><td><div class="pb"><div class="pb-f" style="width:${p}%;background:${pc}"></div></div> <b style="color:${pc}">${p}</b></td><td style="font-size:11px;color:#94a3b8">${t.address||''}</td><td>${t.detection_count}</td><td style="font-size:11px;color:#64748b">${dt}</td><td><span class="st" style="background:${sc}20;color:${sc}">${XL[t.status]||t.status}</span></td></tr>`}).join('')}
+    const canVerify=t.status==='new';
+    return`<tr onclick="sel(${t.id})" id="r${t.id}"><td><div class="dot" style="background:${SC[t.severity]}"></div></td><td style="font-weight:500">${TL[t.defect_type]||t.defect_type}</td><td><span class="sev" style="background:${SC[t.severity]}20;color:${SC[t.severity]}">${SL[t.severity]||t.severity}</span></td><td><div class="pb"><div class="pb-f" style="width:${p}%;background:${pc}"></div></div> <b style="color:${pc}">${p}</b></td><td style="font-size:11px;color:#94a3b8">${t.address||''}</td><td>${t.detection_count}</td><td style="font-size:11px;color:#64748b">${dt}</td><td><span class="st" style="background:${sc}20;color:${sc}">${XL[t.status]||t.status}</span></td><td onclick="event.stopPropagation()">${canVerify?`<button onclick="verifyTicket(${t.id},this)" style="background:#22c55e20;color:#22c55e;border:1px solid #22c55e40;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">אמת ✓</button>`:''}</td></tr>`}).join('')}
 
 function sel(id){
   document.querySelectorAll('.tbl tr').forEach(r=>r.classList.remove('sel'));
@@ -213,7 +214,9 @@ function sel(id){
   </div>
   
   <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:8px">דיווחים (${dets.length})</div>
-  
+
+  ${(()=>{const imgs=dets.filter(d=>d.image_url).map(d=>d.image_url.startsWith('/')?API+d.image_url:d.image_url);return imgs.length>1?'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px">'+imgs.map(u=>'<img src="'+u+'" style="width:100px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0;cursor:pointer;border:1px solid #1e293b" onclick="document.getElementById(\'imgOv\').style.display=\'flex\';document.getElementById(\'imgOvS\').src=this.src" onerror="this.style.display=\'none\'"/>').join('')+'</div>':'';})()}
+
   ${dets.length===0?'<div style="padding:20px;text-align:center;color:#64748b">אין דיווחים</div>':
   dets.map((d,i)=>{
     const imgUrl=d.image_url||'';
@@ -257,8 +260,14 @@ function sel(id){
           '<strong>סיכון נזיקין:</strong> '+(vlm.liability_risk||'—')+
         '</div></div>':'')+
         (env?'<div class="ag" style="border-color:#22c55e"><div class="ag-t" style="color:#22c55e">🌍 Agent סביבה</div><div class="ag-b">'+
-          '<strong>ציון סביבה:</strong> '+(env.environment_score||0)+'/100<br>'+
-          (env.risk_factors?'<strong>גורמי סיכון:</strong> '+env.risk_factors.join(', '):'')+
+          '<strong>ציון סביבה:</strong> '+(env.environment_score||0)+'/100'+
+          (env.address&&env.address.road?' | <strong>כביש:</strong> '+env.address.road:'')+
+          (env.address&&env.address.suburb?' ('+env.address.suburb+')':'')+
+          '<br>'+
+          (env.weather&&env.weather.weather_label?'<strong>מזג אוויר:</strong> '+env.weather.weather_label+(env.weather.temperature_c?' | '+env.weather.temperature_c+'°C':'')+
+            (env.weather.wind_speed_kmh?' | רוח '+env.weather.wind_speed_kmh+' קמ"ש':'')+'<br>':'')+
+          (env.risk_factors&&env.risk_factors.length?'<strong>גורמי סיכון:</strong> '+env.risk_factors.join(', '):'ללא גורמי סיכון ידועים')+
+          (env.nearby_places&&env.nearby_places.length?'<br><strong>מקומות קרובים:</strong> '+env.nearby_places.slice(0,3).map(p=>p.name+' ('+p.distance_m+'מ׳)').join(', '):'')+
         '</div></div>':'')+
         (dedup?'<div class="ag" style="border-color:#f59e0b"><div class="ag-t" style="color:#f59e0b">🔄 Agent כפילויות</div><div class="ag-b">'+
           (dedup.is_duplicate?'<strong style="color:#ef4444">כפילות!</strong> של דיווח #'+dedup.duplicate_of:'<strong style="color:#22c55e">ייחודי</strong> — '+dedup.reason)+
@@ -282,6 +291,21 @@ function toggleDet(el){el.classList.toggle('open')}
 
 function sw(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
   document.getElementById('tc-'+id).classList.add('on');document.querySelectorAll('.tab')[id==='ov'?0:1].classList.add('on')}
+
+async function verifyTicket(id,btn){
+  btn.disabled=true;btn.textContent='...';
+  try{
+    const r=await fetch(API+'/api/v1/workflow/tickets/'+id+'/verify',{method:'POST',headers:H()});
+    if(r.ok){
+      btn.textContent='✓';btn.style.color='#22c55e';
+      const t=allT.find(x=>x.id===id);if(t)t.status='verified';
+      buildTable();sel(id);
+    }else{
+      const d=await r.json();btn.textContent='שגיאה';btn.disabled=false;
+      alert('שגיאה: '+(d.detail||JSON.stringify(d)));
+    }
+  }catch(e){btn.textContent='שגיאה';btn.disabled=false;}
+}
 
 // Set default date filter to today
 const today=new Date().toISOString().split('T')[0];

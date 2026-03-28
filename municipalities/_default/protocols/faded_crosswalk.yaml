@@ -1,0 +1,96 @@
+protocol:
+  id: faded_crosswalk
+  name: "חידוש סימון מעבר חציה"
+  defect_type: faded_crosswalk
+  version: "1.0"
+
+  steps:
+    - id: manager_approval
+      name: "אישור מנהל"
+      owner_role: work_manager
+      allowed_actions: [approve, reject]
+      required_before_advance: [approve]
+      timeout_hours: 4
+      on_timeout: escalate_up
+      skip_allowed: false
+      message_template: notify_manager_new_ticket
+
+    - id: contractor_assignment
+      name: "הקצאת צוות סימון"
+      owner_role: work_manager
+      allowed_actions: [assign_contractor]
+      required_before_advance: [assign_contractor]
+      auto_trigger: true
+      timeout_hours: 2
+      skip_allowed: false
+
+    - id: contractor_confirm
+      name: "אישור קבלן"
+      owner_role: contractor
+      allowed_actions: [confirm_time, decline]
+      required_before_advance: [confirm_time]
+      timeout_hours: 4
+      on_timeout: reassign
+      skip_allowed: false
+      message_template: notify_contractor_assignment
+
+    - id: site_arrival
+      name: "הגעה לאתר"
+      owner_role: contractor
+      allowed_actions: [arrived]
+      required_gates:
+        - type: photo
+          label: "תמונת מעבר חציה דהוי לפני"
+          key: photo_before
+      required_before_advance: [arrived]
+      skip_allowed: false
+      gate_event: true
+
+    - id: traffic_control
+      name: "הסדרת תנועה"
+      owner_role: field_worker
+      allowed_actions: [traffic_ready]
+      required_before_advance: [traffic_ready]
+      skip_allowed: false
+      regulation: "הוראות הסדרת תנועה בזמן עבודה 45-ד"
+
+    - id: marking
+      name: "סימון מחדש"
+      owner_role: field_worker
+      allowed_actions: [marking_done]
+      required_gates:
+        - type: photo
+          label: "תמונת סימון חדש"
+          key: photo_after
+      required_before_advance: [marking_done]
+      skip_allowed: false
+
+    - id: drying_wait
+      name: "המתנה להתייבשות"
+      owner_role: field_worker
+      allowed_actions: [drying_complete]
+      wait_minutes: 60
+      skip_allowed: false
+      note: "יש להמתין לייבוש הצבע לפני פתיחה לתנועה"
+
+    - id: close
+      name: "סגירת טיקט"
+      owner_role: work_manager
+      allowed_actions: [close]
+      auto_trigger: true
+      required_before_advance: [close]
+      skip_allowed: false
+      final_step: true
+
+  materials:
+    - name: "צבע כביש לבן"
+      unit: liter
+      formula: "crosswalk_area_m2 * 0.5"
+
+  team_required:
+    - role: field_worker
+      count: 2
+    - role: contractor
+      count: 1
+
+  estimated_hours: 2

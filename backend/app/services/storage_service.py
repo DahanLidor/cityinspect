@@ -72,5 +72,19 @@ async def save_upload(file: UploadFile) -> tuple[str, str]:
     async with aiofiles.open(dest, "wb") as fh:
         await fh.write(raw)
 
-    logger.info("Image saved", extra={"filename": filename, "size": len(raw)})
+    logger.info("Image saved", extra={"fname": filename, "size": len(raw)})
     return f"/uploads/{filename}", image_hash
+
+
+async def save_file(file: UploadFile) -> tuple[str, str]:
+    """Save any file (no MIME validation). Returns (url, sha256_hash)."""
+    max_bytes = settings.max_upload_size_mb * 1024 * 1024 * 50  # 500 MB for point clouds
+    raw = await file.read(max_bytes + 1)
+    file_hash = hashlib.sha256(raw).hexdigest()[:16]
+    ext = (file.filename or "bin").rsplit(".", 1)[-1]
+    fname = f"{file_hash}.{ext}"
+    dest = os.path.join(settings.upload_path, fname)
+    async with aiofiles.open(dest, "wb") as fh:
+        await fh.write(raw)
+    logger.info("File saved", extra={"fname": fname, "size": len(raw)})
+    return f"/uploads/{fname}", file_hash

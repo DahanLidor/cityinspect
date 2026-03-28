@@ -188,6 +188,86 @@ async def check_can_act(
     return {"can_act": can, "reason": reason}
 
 
+@router.post("/tickets/{ticket_id}/verify")
+async def verify_ticket(
+    ticket_id: int,
+    db: DbSession,
+    _: User = Depends(get_current_user),
+):
+    """
+    One-click verify: opens workflow (if not started) and auto-advances
+    all steps until the first non-auto-trigger step that needs a real person.
+    Called from the dashboard 'אמת' button.
+    """
+    ticket = await db.get(Ticket, ticket_id)
+    if not ticket:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+
+    engine = WorkflowEngine(db)
+
+    # Open workflow if not yet started
+    if not ticket.current_step_id:
+        try:
+            await engine.open_ticket(ticket)
+            await db.commit()
+        except WorkflowError as exc:
+            await db.rollback()
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+
+    # Auto-advance the current step if it is the first step (manager_approval)
+    # using the assigned person (or the first available work_manager)
+    from sqlalchemy import select as sa_select
+    open_step_result = await db.execute(
+        sa_select(WorkflowStep)
+        .where(WorkflowStep.ticket_id == ticket_id)
+        .where(WorkflowStep.status == "open")
+        .order_by(WorkflowStep.opened_at.desc())
+    )
+    open_step = open_step_result.scalars().first()
+    if not open_step:
+        return {"status": "ok", "message": "Workflow already completed", "ticket_status": ticket.status}
+
+    # Find a person with the right role to approve
+    person_id = open_step.owner_person_id
+    if not person_id:
+        # Try the ticket's city first, then any city (fallback for demo/default city)
+        for city_filter in [ticket.city_id, None]:
+            q = sa_select(Person).where(Person.role == open_step.owner_role).where(Person.is_active == True)
+            if city_filter is not None:
+                q = q.where(Person.city_id == city_filter)
+            mgr_result = await db.execute(q)
+            mgr = mgr_result.scalars().first()
+            if mgr:
+                person_id = mgr.id
+                break
+
+    if not person_id:
+        # No person found but workflow is open — update status and return
+        ticket.status = "verified"
+        await db.commit()
+        return {"status": "ok", "message": "Verified (no assignee found)", "current_step": open_step.step_id}
+
+    person = await db.get(Person, person_id)
+    if not person:
+        ticket.status = "verified"
+        await db.commit()
+        return {"status": "ok", "message": "Verified", "current_step": open_step.step_id}
+
+    # Advance with approve action
+    try:
+        next_step = await engine.advance(ticket, person, "approve", data={"note": "אומת מהדאשבורד"})
+        ticket.status = "verified"
+        await db.commit()
+        return {
+            "status": "ok",
+            "next_step": next_step.step_id if next_step else None,
+            "ticket_status": ticket.status,
+        }
+    except WorkflowError as exc:
+        await db.rollback()
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+
+
 @router.get("/protocol/{city_id}/{defect_type}")
 async def get_protocol(
     city_id: str,

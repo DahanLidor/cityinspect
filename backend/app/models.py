@@ -146,6 +146,7 @@ class Detection(Base):
     image_url: Mapped[str] = MappedColumn(String(512), default="")
     image_hash: Mapped[str] = MappedColumn(String(64), default="")
     image_caption: Mapped[str] = MappedColumn(String(512), default="")
+    point_cloud_url: Mapped[str] = MappedColumn(String(512), default="")
     notes: Mapped[str] = MappedColumn(Text, default="")
     pipeline_status: Mapped[str] = MappedColumn(String(16), default="pending")
 
@@ -182,6 +183,10 @@ class WorkflowStep(Base):
     data_json: Mapped[str] = MappedColumn(Text, default="{}")     # תמונות, הערות, מדידות
     skip_reason: Mapped[Optional[str]] = MappedColumn(Text, nullable=True)
     skip_approved_by_id: Mapped[Optional[int]] = MappedColumn(Integer, ForeignKey("people.id"), nullable=True)
+
+    # Response time metrics
+    response_time_min: Mapped[Optional[float]] = MappedColumn(Float, nullable=True)  # minutes from opened to completed
+    sla_met: Mapped[Optional[bool]] = MappedColumn(Boolean, nullable=True)           # True if completed before deadline
 
     ticket: Mapped[Ticket] = relationship("Ticket", back_populates="workflow_steps")
     owner: Mapped[Optional[Person]] = relationship("Person", foreign_keys=[owner_person_id])

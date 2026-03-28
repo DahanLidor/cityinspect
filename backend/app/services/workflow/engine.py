@@ -154,10 +154,24 @@ class WorkflowEngine:
             return await self._goto_step(ticket, person, protocol_step["on_reject_redo"], data)
 
         # Complete current step
+        now = _utcnow()
         current_step.status = "done"
-        current_step.completed_at = _utcnow()
+        current_step.completed_at = now
         current_step.completed_by_id = person.id
         current_step.action_taken = action
+
+        # Response time metrics (handle timezone-naive datetimes from SQLite)
+        def _tz(dt):
+            if dt is None:
+                return None
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+        if current_step.opened_at:
+            delta = now - _tz(current_step.opened_at)
+            current_step.response_time_min = round(delta.total_seconds() / 60, 1)
+        if current_step.deadline_at:
+            current_step.sla_met = now <= _tz(current_step.deadline_at)
+
         if data:
             existing = json.loads(current_step.data_json or "{}")
             existing.update(data)
@@ -188,7 +202,60 @@ class WorkflowEngine:
             logger.warning("No next step after %s for ticket %d", current_step.step_id, ticket.id)
             return None
 
-        return await self._open_step(ticket, next_step_def)
+        next_step = await self._open_step(ticket, next_step_def)
+
+        # Auto-advance steps with auto_trigger: true (up to 3 to avoid infinite loops)
+        for _ in range(3):
+            if not next_step_def.get("auto_trigger"):
+                break
+            auto_action = (next_step_def.get("required_before_advance") or next_step_def.get("allowed_actions") or [None])[0]
+            if not auto_action:
+                break
+            owner = await self.db.get(Person, next_step.owner_person_id) if next_step.owner_person_id else None
+            if not owner:
+                owner = await self._find_person_for_role(ticket.city_id, next_step_def["owner_role"])
+            if not owner:
+                break  # no one to assign — leave step open
+
+            now_auto = _utcnow()
+            next_step.status = "done"
+            next_step.completed_at = now_auto
+            next_step.completed_by_id = owner.id
+            next_step.action_taken = auto_action
+            opened = next_step.opened_at
+            if opened:
+                oa = opened if opened.tzinfo else opened.replace(tzinfo=timezone.utc)
+                next_step.response_time_min = round((now_auto - oa).total_seconds() / 60, 1)
+            deadline = next_step.deadline_at
+            if deadline:
+                dl = deadline if deadline.tzinfo else deadline.replace(tzinfo=timezone.utc)
+                next_step.sla_met = now_auto <= dl
+
+            await self._audit(ticket, owner, "step.auto_completed", {
+                "step_id": next_step.step_id,
+                "action": auto_action,
+            })
+            await bus.emit(Events.STEP_COMPLETED, {
+                "city_id": ticket.city_id,
+                "ticket_id": ticket.id,
+                "step_id": next_step.step_id,
+                "action": auto_action,
+                "completed_by_id": owner.id,
+            })
+
+            if next_step_def.get("final_step"):
+                ticket.status = "closed"
+                ticket.current_step_id = None
+                await self.db.flush()
+                return None
+
+            after_def = protocol_loader.get_next_step(ticket.city_id, ticket.defect_type, next_step.step_id)
+            if not after_def:
+                break
+            next_step = await self._open_step(ticket, after_def)
+            next_step_def = after_def
+
+        return next_step
 
     # ── Skip step ─────────────────────────────────────────────────────────────
 

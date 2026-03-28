@@ -15,7 +15,7 @@ from app.core.security import get_current_user
 from app.models import User
 from app.schemas import DetectionUploadResponse
 from app.services.detection_service import create_detection
-from app.services.storage_service import save_upload
+from app.services.storage_service import save_file, save_upload
 from app.services.ticket_service import find_or_create_ticket
 from app.ws.hub import hub
 
@@ -65,6 +65,7 @@ async def upload_detection(
     humidity_pct: float = Form(50.0),
     visibility_m: int = Form(1000),
     image: Optional[UploadFile] = File(None),
+    point_cloud: Optional[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DetectionUploadResponse:
@@ -73,6 +74,11 @@ async def upload_detection(
     image_hash = ""
     if image and image.filename:
         image_url, image_hash = await save_upload(image)
+
+    # 1b. Handle point cloud upload
+    point_cloud_url = ""
+    if point_cloud and point_cloud.filename:
+        point_cloud_url, _ = await save_file(point_cloud)
 
     # 2. Find or create ticket
     address = f"{lat:.4f}, {lng:.4f}"
@@ -98,6 +104,7 @@ async def upload_detection(
         image_url=image_url,
         image_hash=image_hash,
         image_caption=image_caption,
+        point_cloud_url=point_cloud_url,
         ambient_temp_c=ambient_temp_c,
         asphalt_temp_c=asphalt_temp_c,
         weather_condition=weather_condition,

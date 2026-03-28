@@ -20,7 +20,7 @@ from app.core.events import bus
 from app.core.logging import get_logger, setup_logging
 from app.core.security import decode_token
 from app.routers import auth, detections, pipeline, stats, tickets, work_orders
-from app.routers import admin_chat, people, whatsapp, workflow
+from app.routers import admin_chat, people, whatsapp, workflow, use_cases
 from app.ws.hub import hub
 
 settings = get_settings()
@@ -56,6 +56,7 @@ def create_app() -> FastAPI:
         auth.router, detections.router, tickets.router, stats.router,
         work_orders.router, pipeline.router,
         people.router, workflow.router, whatsapp.router, admin_chat.router,
+        use_cases.router,
     ]:
         app.include_router(router)
 
@@ -122,6 +123,18 @@ def create_app() -> FastAPI:
     async def startup() -> None:
         logger.info("Starting CityInspect", extra={"version": settings.version})
         await create_tables()
+        # Incremental migrations: add new columns if they don't exist
+        from sqlalchemy import text as _text
+        from app.core.database import _engine as _eng
+        async with _eng.begin() as conn:
+            for stmt in [
+                "ALTER TABLE workflow_steps ADD COLUMN response_time_min REAL",
+                "ALTER TABLE workflow_steps ADD COLUMN sla_met INTEGER",
+            ]:
+                try:
+                    await conn.execute(_text(stmt))
+                except Exception:
+                    pass  # column already exists
         from app.core.database import _async_session
         from app.seed import seed
         from app.services.people_engine import PeopleEngine

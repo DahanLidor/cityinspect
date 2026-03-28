@@ -1,11 +1,12 @@
 """
 SLA Watcher — scans for timed-out workflow steps and escalates.
+Also expires unverified tickets older than EXPIRY_DAYS days (never deletes).
 Runs every 60 seconds via Celery Beat.
 """
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,8 @@ from app.models import Ticket, WorkflowStep
 from app.services.workflow.engine import WorkflowEngine
 
 logger = logging.getLogger(__name__)
+
+EXPIRY_DAYS = 7   # unverified tickets expire after this many days
 
 
 async def check_sla_violations(db: AsyncSession) -> dict:
@@ -55,3 +58,28 @@ async def check_sla_violations(db: AsyncSession) -> dict:
         await db.commit()
 
     return {"checked": len(overdue_steps), "escalated": escalated}
+
+
+async def expire_old_tickets(db: AsyncSession) -> dict:
+    """
+    Mark unverified tickets older than EXPIRY_DAYS as 'expired'.
+    Tickets are NEVER deleted — they are only status-changed.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(days=EXPIRY_DAYS)
+
+    result = await db.execute(
+        select(Ticket)
+        .where(Ticket.status == "new")
+        .where(Ticket.created_at < cutoff)
+    )
+    old_tickets = result.scalars().all()
+
+    if not old_tickets:
+        return {"expired": 0}
+
+    for ticket in old_tickets:
+        ticket.status = "expired"
+        logger.info("Ticket %d expired (older than %d days, still unverified)", ticket.id, EXPIRY_DAYS)
+
+    await db.commit()
+    return {"expired": len(old_tickets)}

@@ -16,8 +16,12 @@ from app.schemas import StatsResponse
 
 router = APIRouter(prefix="/api/v1", tags=["stats"])
 
-_DEFECT_TYPES = ["pothole", "road_crack", "broken_light", "drainage_blocked", "sidewalk"]
-_STATUSES = ["new", "verified", "assigned", "in_progress", "resolved"]
+_DEFECT_TYPES = [
+    "pothole", "road_crack", "broken_light", "drainage_blocked", "sidewalk",
+    "broken_sidewalk", "street_light", "leaning_pole", "overflowing_bin",
+    "faded_crosswalk", "fallen_tree", "illegal_dumping", "unknown",
+]
+_STATUSES = ["new", "verified", "assigned", "in_progress", "resolved", "closed", "rejected", "expired"]
 _SEVERITIES = ["low", "medium", "high", "critical"]
 
 
@@ -49,14 +53,19 @@ async def stats_summary(
     det_result = await db.execute(select(Detection))
     detections = det_result.scalars().all()
     one_hour_ago = datetime.now(timezone.utc).replace(microsecond=0)
-    det_last_hour = sum(
-        1 for d in detections
-        if d.detected_at and (now - d.detected_at).total_seconds() < 3600
-    )
+    def _seconds_ago(dt: datetime) -> float:
+        if dt is None:
+            return float("inf")
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return (now - dt).total_seconds()
+
+    det_last_hour = sum(1 for d in detections if _seconds_ago(d.detected_at) < 3600)
 
     today = date.today()
-    open_count = sum(1 for t in tickets if t.status not in ("resolved", "closed"))
-    critical_count = sum(1 for t in tickets if t.severity == "critical" and t.status not in ("resolved", "closed"))
+    _closed_statuses = ("resolved", "closed", "rejected", "expired")
+    open_count = sum(1 for t in tickets if t.status not in _closed_statuses)
+    critical_count = sum(1 for t in tickets if t.severity == "critical" and t.status not in _closed_statuses)
     in_progress = sum(1 for t in tickets if t.status == "in_progress")
 
     return StatsResponse(
@@ -65,7 +74,7 @@ async def stats_summary(
         critical_tickets=critical_count,
         resolved_today=sum(
             1 for t in tickets
-            if t.status in ("resolved", "closed") and t.updated_at and t.updated_at.date() == today
+            if t.status in _closed_statuses and t.updated_at and (t.updated_at.replace(tzinfo=None) if t.updated_at.tzinfo else t.updated_at).date() == today
         ),
         sla_breached=sla_breached,
         overdue_steps=overdue_steps,

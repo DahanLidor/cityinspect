@@ -1,0 +1,88 @@
+protocol:
+  id: street_light
+  name: "תיקון עמוד תאורה תקול"
+  defect_type: street_light
+  version: "1.0"
+
+  steps:
+    - id: manager_approval
+      name: "אישור מנהל"
+      owner_role: work_manager
+      allowed_actions: [approve, reject]
+      required_before_advance: [approve]
+      timeout_hours: 2
+      on_timeout: escalate_up
+      skip_allowed: false
+      message_template: notify_manager_new_ticket
+
+    - id: electrician_assignment
+      name: "שיגור חשמלאי"
+      owner_role: work_manager
+      allowed_actions: [assign_contractor]
+      required_before_advance: [assign_contractor]
+      auto_trigger: true
+      timeout_hours: 2
+      on_timeout: escalate_up
+      skip_allowed: false
+
+    - id: contractor_confirm
+      name: "אישור חשמלאי"
+      owner_role: contractor
+      allowed_actions: [confirm_time, decline]
+      required_before_advance: [confirm_time]
+      timeout_hours: 4
+      on_timeout: reassign
+      skip_allowed: false
+      message_template: notify_contractor_assignment
+
+    - id: site_arrival
+      name: "הגעה לאתר"
+      owner_role: contractor
+      allowed_actions: [arrived]
+      required_gates:
+        - type: photo
+          label: "תמונת תקלה לפני תיקון"
+          key: photo_before
+      required_before_advance: [arrived]
+      skip_allowed: false
+      gate_event: true
+
+    - id: electrical_repair
+      name: "תיקון חשמלי"
+      owner_role: field_worker
+      allowed_actions: [repair_done]
+      required_gates:
+        - type: photo
+          label: "תמונה לאחר תיקון"
+          key: photo_after
+      required_before_advance: [repair_done]
+      skip_allowed: false
+      regulation: "תקן חשמל ישראלי 1220"
+
+    - id: lighting_test
+      name: "בדיקת תאורה"
+      owner_role: inspector
+      allowed_actions: [test_passed, test_failed]
+      required_before_advance: [test_passed]
+      on_reject_redo: electrical_repair
+      timeout_hours: 4
+      skip_allowed: false
+
+    - id: close
+      name: "סגירת טיקט"
+      owner_role: work_manager
+      allowed_actions: [close]
+      auto_trigger: true
+      required_before_advance: [close]
+      skip_allowed: false
+      final_step: true
+
+  team_required:
+    - role: field_worker
+      count: 1
+    - role: contractor
+      count: 1
+    - role: inspector
+      count: 1
+
+  estimated_hours: 2
