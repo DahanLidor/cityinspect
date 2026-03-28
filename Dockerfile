@@ -13,6 +13,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Application code (includes pre-built frontend_build/)
 COPY backend/ .
 
+# Protocol YAML files (workflow engine)
+COPY municipalities/ /municipalities
+
 # Create upload directory
 RUN mkdir -p /data/uploads
 
