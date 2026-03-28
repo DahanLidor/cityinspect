@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     pipeline_enabled: bool = True
 
     # ── CORS ─────────────────────────────────────────────────
-    allowed_origins: List[str] = ["http://localhost:3000", "http://localhost:3001"]
+    allowed_origins: List[str] = ["http://localhost:3000", "http://localhost:3001", "https://cityinspect-production.up.railway.app"]
 
     # ── Rate limiting ─────────────────────────────────────────
     rate_limit_upload: str = "20/minute"

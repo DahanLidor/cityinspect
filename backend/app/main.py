@@ -149,8 +149,11 @@ def create_app() -> FastAPI:
             except Exception as exc:
                 logger.warning("Contact sync failed (non-fatal): %s", exc)
                 await db.rollback()
-        await bus.connect()
-        await bus.start_listeners()
+        try:
+            await bus.connect()
+            await bus.start_listeners()
+        except Exception as exc:
+            logger.warning("Redis unavailable — event bus disabled (non-fatal): %s", exc)
         logger.info("Startup complete")
 
     @app.on_event("shutdown")
