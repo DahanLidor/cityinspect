@@ -40,6 +40,7 @@ class StepOut(BaseModel):
     completed_at: datetime | None
     action_taken: str | None
     data: dict
+    allowed_actions: list[str] = []
 
 
 class AuditEntry(BaseModel):
@@ -126,6 +127,14 @@ async def get_ticket_steps(
         .order_by(WorkflowStep.opened_at.asc())
     )
     steps = result.scalars().all()
+    # Enrich each step with allowed_actions from the protocol
+    ticket = await db.get(Ticket, ticket_id)
+    def _allowed(s):
+        if not ticket:
+            return []
+        proto_step = protocol_loader.get_step(ticket.city_id, ticket.defect_type, s.step_id)
+        return proto_step.get("allowed_actions", []) if proto_step else []
+
     return [
         StepOut(
             id=s.id,
@@ -139,6 +148,7 @@ async def get_ticket_steps(
             completed_at=s.completed_at,
             action_taken=s.action_taken,
             data=json.loads(s.data_json or "{}"),
+            allowed_actions=_allowed(s) if s.status == "open" else [],
         )
         for s in steps
     ]
