@@ -78,10 +78,14 @@ class EventBus:
         if not self._redis:
             logger.warning("EventBus not connected — event dropped: %s", event)
             return ""
-        data = {"event": event, "payload": json.dumps(payload, ensure_ascii=False, default=str)}
-        msg_id = await self._redis.xadd(f"cityinspect:{event}", data)
-        logger.debug("Event emitted: %s → %s", event, msg_id)
-        return msg_id
+        try:
+            data = {"event": event, "payload": json.dumps(payload, ensure_ascii=False, default=str)}
+            msg_id = await self._redis.xadd(f"cityinspect:{event}", data)
+            logger.debug("Event emitted: %s → %s", event, msg_id)
+            return msg_id
+        except Exception as exc:
+            logger.warning("EventBus emit failed — event dropped: %s (%s)", event, exc)
+            return ""
 
     def on(self, event: str) -> Callable:
         """Decorator: register async handler for event."""
