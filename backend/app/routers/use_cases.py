@@ -120,7 +120,7 @@ Be strict: if the image does not clearly show this defect type, return valid=fal
 
     try:
         msg = await client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-sonnet-4-20250514",
             max_tokens=256,
             messages=[{
                 "role": "user",
