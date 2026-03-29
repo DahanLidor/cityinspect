@@ -116,7 +116,8 @@ class APIService {
         image: UIImage,
         pointCloudData: Data?,
         useCaseId: String,
-        imageCaption: String = ""
+        imageCaption: String = "",
+        sensorData: [String: Any]? = nil
     ) async throws -> UploadResponse {
         guard let jpeg = image.jpegData(compressionQuality: 0.85) else {
             throw APIError.serverError("Failed to encode image")
@@ -141,6 +142,9 @@ class APIService {
         field("vehicle_sensor_version", "lidar-v1.0")
         field("reported_by", username)
         if !imageCaption.isEmpty { field("image_caption", imageCaption) }
+        if let sd = sensorData, let jsonData = try? JSONSerialization.data(withJSONObject: sd) {
+            field("sensor_data", String(data: jsonData, encoding: .utf8) ?? "{}")
+        }
 
         body += "--\(boundary)\r\nContent-Disposition: form-data; name=\"image\"; filename=\"scan.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".data(using: .utf8)!
         body += jpeg

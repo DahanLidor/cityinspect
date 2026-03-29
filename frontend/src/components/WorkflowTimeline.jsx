@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getTicketSteps, getTicketAudit, openTicketWorkflow } from '../api/client';
+import { getTicketSteps, getTicketAudit, openTicketWorkflow, performWorkflowAction } from '../api/client';
 
 const STEP_STATUS_CONFIG = {
   open:    { color: 'border-blue-500 bg-blue-950',    dot: 'bg-blue-400 animate-pulse', label: 'פעיל' },
@@ -17,6 +17,19 @@ const ROLE_LABELS = {
   inspector:             '🔍 מפקח',
 };
 
+const ACTION_CONFIG = {
+  approve:           { label: 'אשר',           color: 'bg-green-600 hover:bg-green-500 text-white' },
+  reject:            { label: 'דחה',           color: 'bg-red-600 hover:bg-red-500 text-white' },
+  assign_contractor: { label: 'הקצה קבלן',    color: 'bg-blue-600 hover:bg-blue-500 text-white' },
+  assign_team:       { label: 'הקצה צוות',    color: 'bg-blue-600 hover:bg-blue-500 text-white' },
+  confirm:           { label: 'אשר הגעה',      color: 'bg-green-600 hover:bg-green-500 text-white' },
+  complete:          { label: 'סיים תיקון',    color: 'bg-green-600 hover:bg-green-500 text-white' },
+  inspect_pass:      { label: 'עבר בדיקה ✓',  color: 'bg-green-600 hover:bg-green-500 text-white' },
+  inspect_fail:      { label: 'נכשל בדיקה',   color: 'bg-red-600 hover:bg-red-500 text-white' },
+  reject_redo:       { label: 'החזר לתיקון',  color: 'bg-orange-600 hover:bg-orange-500 text-white' },
+  close:             { label: 'סגור טיקט',    color: 'bg-slate-600 hover:bg-slate-500 text-white' },
+};
+
 function formatDt(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleString('he-IL', {
@@ -24,7 +37,7 @@ function formatDt(iso) {
   });
 }
 
-function StepCard({ step, isLast }) {
+function StepCard({ step, isLast, onAction, acting }) {
   const cfg = STEP_STATUS_CONFIG[step.status] || STEP_STATUS_CONFIG.open;
   const isOverdue = step.status === 'open' && step.deadline_at && new Date(step.deadline_at) < new Date();
 
@@ -81,7 +94,7 @@ function StepCard({ step, isLast }) {
           )}
         </div>
 
-        {/* Gate data (photos etc.) */}
+        {/* Gate data */}
         {step.data && Object.keys(step.data).length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {Object.entries(step.data).map(([key, val]) => (
@@ -89,6 +102,25 @@ function StepCard({ step, isLast }) {
                 {key === 'note' ? `📝 ${val}` : `📷 ${key}`}
               </span>
             ))}
+          </div>
+        )}
+
+        {/* Action buttons — only for open steps with allowed_actions */}
+        {step.status === 'open' && step.allowed_actions?.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {step.allowed_actions.map(action => {
+              const cfg = ACTION_CONFIG[action] || { label: action, color: 'bg-slate-600 hover:bg-slate-500 text-white' };
+              return (
+                <button
+                  key={action}
+                  disabled={acting}
+                  onClick={() => onAction(step, action)}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors ${cfg.color}`}
+                >
+                  {acting ? '⏳' : cfg.label}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -102,6 +134,7 @@ export default function WorkflowTimeline({ ticket, onWorkflowStarted }) {
   const [loading, setLoading] = useState(true);
   const [showAudit, setShowAudit] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [acting, setActing] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -123,9 +156,29 @@ export default function WorkflowTimeline({ ticket, onWorkflowStarted }) {
       onWorkflowStarted?.();
       load();
     } catch (e) {
-      alert(e.response?.data?.detail || 'שגיאה בפתיחת תהליך');
+      const d = e.response?.data?.detail;
+      const msg = typeof d === 'string' ? d : d ? JSON.stringify(d) : (e.message || 'שגיאה בפתיחת תהליך');
+      alert(msg);
     } finally {
       setStarting(false);
+    }
+  };
+
+  const handleAction = async (step, action) => {
+    if (!step.owner_person_id) {
+      alert('השלב אינו משויך לאיש קשר — לא ניתן לבצע פעולה');
+      return;
+    }
+    setActing(true);
+    try {
+      await performWorkflowAction(ticket.id, { action, person_id: step.owner_person_id });
+      load();
+    } catch (e) {
+      const d = e.response?.data?.detail;
+      const msg = typeof d === 'string' ? d : d ? JSON.stringify(d) : (e.message || 'שגיאה בביצוע פעולה');
+      alert(msg);
+    } finally {
+      setActing(false);
     }
   };
 
@@ -196,7 +249,13 @@ export default function WorkflowTimeline({ ticket, onWorkflowStarted }) {
       {!showAudit && steps.length > 0 && (
         <div>
           {steps.map((step, i) => (
-            <StepCard key={step.id} step={step} isLast={i === steps.length - 1} />
+            <StepCard
+              key={step.id}
+              step={step}
+              isLast={i === steps.length - 1}
+              onAction={handleAction}
+              acting={acting}
+            />
           ))}
         </div>
       )}

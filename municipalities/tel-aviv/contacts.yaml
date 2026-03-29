@@ -7,6 +7,10 @@ people:
     whatsapp_id: "972501000001"
     email: "d.levi@tel-aviv.gov.il"
     specialties: []
+    skills: []
+    vehicle_type: car
+    max_daily_hours: 10
+    home_base: { lat: 32.0853, lon: 34.7818 }  # עיריית תל אביב
     availability:
       sun_thu: "08:00-18:00"
       fri: "08:00-13:00"
@@ -19,6 +23,10 @@ people:
     whatsapp_id: "972521000002"
     email: "m.cohen@tel-aviv.gov.il"
     specialties: [pothole, road_crack, drainage_blocked, sidewalk]
+    skills: [asphalt, inspection, plumbing]
+    vehicle_type: car
+    max_daily_hours: 9
+    home_base: { lat: 32.0741, lon: 34.7922 }  # שכונת מונטיפיורי
     availability:
       sun_thu: "07:00-17:00"
       fri: "07:00-13:00"
@@ -31,6 +39,10 @@ people:
     whatsapp_id: "972521000003"
     email: "y.levy@tel-aviv.gov.il"
     specialties: [pothole, road_crack, sidewalk]
+    skills: [asphalt, welding, inspection]
+    vehicle_type: car
+    max_daily_hours: 9
+    home_base: { lat: 32.0624, lon: 34.7731 }  # נווה צדק
     availability:
       sun_thu: "07:00-17:00"
       fri: "07:00-13:00"
@@ -43,6 +55,10 @@ people:
     whatsapp_id: "972521000004"
     email: "d.mizrahi@tel-aviv.gov.il"
     specialties: [drainage_blocked, broken_light]
+    skills: [plumbing, electrical]
+    vehicle_type: car
+    max_daily_hours: 9
+    home_base: { lat: 32.1033, lon: 34.7932 }  # רמת אביב
     availability:
       sun_thu: "07:00-17:00"
       fri: "07:00-13:00"
@@ -54,6 +70,10 @@ people:
     phone: "052-1000005"
     whatsapp_id: "972521000005"
     specialties: [pothole, road_crack, sidewalk, drainage_blocked]
+    skills: [inspection, asphalt, plumbing]
+    vehicle_type: car
+    max_daily_hours: 8
+    home_base: { lat: 32.0556, lon: 34.7625 }  # יפו
     availability:
       sun_thu: "07:00-17:00"
       fri: "07:00-13:00"
@@ -66,6 +86,10 @@ people:
     whatsapp_id: "972542000001"
     email: "avi@kvish-mahir.co.il"
     specialties: [pothole, road_crack]
+    skills: [asphalt, welding, heavy_machinery]
+    vehicle_type: truck
+    max_daily_hours: 10
+    home_base: { lat: 32.0489, lon: 34.7592 }  # אזור התעשייה חולון
     availability:
       sun_thu: "06:00-18:00"
       fri: "06:00-13:00"
@@ -77,6 +101,10 @@ people:
     phone: "054-2000002"
     whatsapp_id: "972542000002"
     specialties: [drainage_blocked, sidewalk]
+    skills: [plumbing, concrete, electrical]
+    vehicle_type: truck
+    max_daily_hours: 10
+    home_base: { lat: 32.0917, lon: 34.8117 }  # בני ברק
     availability:
       sun_thu: "07:00-17:00"
       fri: "07:00-13:00"
@@ -88,6 +116,10 @@ people:
     phone: "050-3000001"
     whatsapp_id: "972503000001"
     specialties: [pothole, road_crack]
+    skills: [asphalt, welding]
+    vehicle_type: bike
+    max_daily_hours: 8
+    home_base: { lat: 32.0701, lon: 34.7643 }  # פלורנטין
     availability:
       sun_thu: "06:00-16:00"
       fri: "06:00-13:00"
@@ -99,6 +131,10 @@ people:
     phone: "050-3000002"
     whatsapp_id: "972503000002"
     specialties: [pothole, road_crack, sidewalk]
+    skills: [asphalt, concrete, welding]
+    vehicle_type: bike
+    max_daily_hours: 8
+    home_base: { lat: 32.0782, lon: 34.7741 }  # לב תל אביב
     availability:
       sun_thu: "06:00-16:00"
       fri: "06:00-13:00"

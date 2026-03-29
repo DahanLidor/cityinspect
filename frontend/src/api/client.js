@@ -59,6 +59,19 @@ export const getPeople = (params = {}) =>
 export const getPerson = (id) =>
   api.get(`/api/v1/people/${id}`).then(r => r.data);
 
+// ── Daily Plans ──────────────────────────────────────────────────────────────
+export const getDailyPlanWorkers = (params = {}) =>
+  api.get('/api/v1/daily-plans/workers', { params }).then(r => r.data);
+
+export const generateDailyPlan = (body) =>
+  api.post('/api/v1/daily-plans/generate', body).then(r => r.data);
+
+export const getDailyPlans = (params = {}) =>
+  api.get('/api/v1/daily-plans', { params }).then(r => r.data);
+
+export const getDailyPlan = (id) =>
+  api.get(`/api/v1/daily-plans/${id}`).then(r => r.data);
+
 // ── Admin Chat (SSE) ──────────────────────────────────────────────────────────
 export const streamAdminChat = async (messages, cityId = 'tel-aviv', onChunk, onDone) => {
   const token = localStorage.getItem('token');

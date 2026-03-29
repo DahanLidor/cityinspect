@@ -20,7 +20,7 @@ from app.core.events import bus
 from app.core.logging import get_logger, setup_logging
 from app.core.security import decode_token
 from app.routers import auth, detections, pipeline, stats, tickets, work_orders
-from app.routers import admin_chat, people, whatsapp, workflow, use_cases
+from app.routers import admin_chat, daily_plans, people, whatsapp, workflow, use_cases
 from app.ws.hub import hub
 
 settings = get_settings()
@@ -56,7 +56,7 @@ def create_app() -> FastAPI:
         auth.router, detections.router, tickets.router, stats.router,
         work_orders.router, pipeline.router,
         people.router, workflow.router, whatsapp.router, admin_chat.router,
-        use_cases.router,
+        use_cases.router, daily_plans.router,
     ]:
         app.include_router(router)
 
@@ -166,6 +166,13 @@ def create_app() -> FastAPI:
             "ALTER TABLE people ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT now()",
             "ALTER TABLE people ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()",
             "ALTER TABLE people ADD COLUMN current_workload INTEGER DEFAULT 0",
+            "ALTER TABLE people ADD COLUMN skills_json TEXT DEFAULT '[]'",
+            "ALTER TABLE people ADD COLUMN vehicle_type VARCHAR(32) DEFAULT ''",
+            "ALTER TABLE people ADD COLUMN max_daily_hours REAL DEFAULT 8.0",
+            "ALTER TABLE people ADD COLUMN home_base_lat REAL",
+            "ALTER TABLE people ADD COLUMN home_base_lon REAL",
+            # detections — sensor data
+            "ALTER TABLE detections ADD COLUMN sensor_data_json TEXT DEFAULT '{}'",
         ]:
             try:
                 async with _eng.begin() as conn:

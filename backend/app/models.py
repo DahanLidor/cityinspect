@@ -1,14 +1,14 @@
 """
 SQLAlchemy ORM models — כולל מודלים חדשים:
-  Person, WorkflowStep, Conversation, WorkOrder (חדש)
+  Person, WorkflowStep, Conversation, WorkOrder, DailyPlan, SystemConfig
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, date, timezone
 from typing import Optional
 
 from sqlalchemy import (
-    Boolean, DateTime, Float, ForeignKey,
+    Boolean, Date, DateTime, Float, ForeignKey,
     Integer, String, Text, func,
 )
 from sqlalchemy.orm import Mapped, MappedColumn, relationship
@@ -65,6 +65,14 @@ class Person(Base):
 
     is_active: Mapped[bool] = MappedColumn(Boolean, default=True)
     current_workload: Mapped[int] = MappedColumn(Integer, default=0)    # טיקטים פתוחים
+
+    # Worker planning fields
+    skills_json: Mapped[str] = MappedColumn(Text, default="[]")          # ["asphalt","plumbing","electrical"]
+    vehicle_type: Mapped[str] = MappedColumn(String(32), default="")     # car | truck | bike | none
+    max_daily_hours: Mapped[float] = MappedColumn(Float, default=8.0)
+    home_base_lat: Mapped[Optional[float]] = MappedColumn(Float, nullable=True)
+    home_base_lon: Mapped[Optional[float]] = MappedColumn(Float, nullable=True)
+
     created_at: Mapped[datetime] = MappedColumn(DateTime(timezone=True), default=_utcnow)
     updated_at: Mapped[datetime] = MappedColumn(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
@@ -147,6 +155,7 @@ class Detection(Base):
     image_hash: Mapped[str] = MappedColumn(String(64), default="")
     image_caption: Mapped[str] = MappedColumn(String(512), default="")
     point_cloud_url: Mapped[str] = MappedColumn(String(512), default="")
+    sensor_data_json: Mapped[str] = MappedColumn(Text, default="{}")     # IMU, compass, lens, LiDAR meta
     notes: Mapped[str] = MappedColumn(Text, default="")
     pipeline_status: Mapped[str] = MappedColumn(String(16), default="pending")
 
@@ -268,3 +277,38 @@ class AuditLog(Base):
     action: Mapped[str] = MappedColumn(String(64))
     data_json: Mapped[str] = MappedColumn(Text, default="{}")
     timestamp: Mapped[datetime] = MappedColumn(DateTime(timezone=True), default=_utcnow, index=True)
+
+
+# ── DailyPlan — תוכנית עבודה יומית ────────────────────────────────────────────
+
+class DailyPlan(Base):
+    """תוכנית עבודה יומית שנוצרה ע״י AI לעובד ספציפי."""
+    __tablename__ = "daily_plans"
+
+    id: Mapped[int] = MappedColumn(Integer, primary_key=True, index=True)
+    city_id: Mapped[str] = MappedColumn(String(64), index=True)
+    person_id: Mapped[int] = MappedColumn(Integer, ForeignKey("people.id"), index=True)
+    plan_date: Mapped[date] = MappedColumn(Date, index=True)
+
+    status: Mapped[str] = MappedColumn(String(16), default="draft")  # draft|sent|active|done
+    plan_json: Mapped[str] = MappedColumn(Text, default="{}")        # Full AI output
+    total_tasks: Mapped[int] = MappedColumn(Integer, default=0)
+    total_hours: Mapped[float] = MappedColumn(Float, default=0.0)
+    total_distance_km: Mapped[float] = MappedColumn(Float, default=0.0)
+
+    created_at: Mapped[datetime] = MappedColumn(DateTime(timezone=True), default=_utcnow)
+    sent_at: Mapped[Optional[datetime]] = MappedColumn(DateTime(timezone=True), nullable=True)
+
+    person: Mapped[Person] = relationship("Person", foreign_keys=[person_id])
+
+
+# ── SystemConfig — הגדרות מערכת ────────────────────────────────────────────────
+
+class SystemConfig(Base):
+    """Key-value store להגדרות מערכת הניתנות לשינוי בזמן ריצה."""
+    __tablename__ = "system_config"
+
+    key: Mapped[str] = MappedColumn(String(128), primary_key=True)
+    value_json: Mapped[str] = MappedColumn(Text, default="{}")
+    updated_at: Mapped[datetime] = MappedColumn(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
+    updated_by: Mapped[str] = MappedColumn(String(128), default="system")

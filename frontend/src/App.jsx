@@ -4,6 +4,7 @@ import DefectDrawer from './components/DefectDrawer';
 import StatsBar from './components/StatsBar';
 import SensorSimulator from './components/SensorSimulator';
 import PeoplePanel from './components/PeoplePanel';
+import DailyPlansPanel from './components/DailyPlansPanel';
 import AdminChat from './components/AdminChat';
 import { useWebSocket } from './hooks/useWebSocket';
 import { login as apiLogin, getMe } from './api/client';
@@ -78,6 +79,7 @@ function LoginScreen({ onLogin }) {
 const NAV_ITEMS = [
   { id: 'map',     icon: '🗺️',  label: 'מפה' },
   { id: 'people',  icon: '👥',  label: 'אנשים' },
+  { id: 'plans',   icon: '📋',  label: 'תוכניות' },
   { id: 'chat',    icon: '🤖',  label: 'AI Chat' },
 ];
 
@@ -190,6 +192,7 @@ export default function App() {
         {activePanel !== 'map' && (
           <div className="w-80 shrink-0 border-l border-slate-800 overflow-hidden flex flex-col">
             {activePanel === 'people' && <PeoplePanel />}
+            {activePanel === 'plans' && <DailyPlansPanel />}
             {activePanel === 'chat' && isAdmin && <AdminChat />}
           </div>
         )}

@@ -121,6 +121,13 @@ class PeopleEngine:
             person.email = p.get("email", "")
             person.specialties_json = json.dumps(p.get("specialties", []), ensure_ascii=False)
             person.availability_json = json.dumps(p.get("availability", {}), ensure_ascii=False)
+            person.skills_json = json.dumps(p.get("skills", []), ensure_ascii=False)
+            person.vehicle_type = p.get("vehicle_type", "")
+            person.max_daily_hours = p.get("max_daily_hours", 8.0)
+            home = p.get("home_base", {})
+            if home:
+                person.home_base_lat = home.get("lat")
+                person.home_base_lon = home.get("lon")
             person.is_active = True
             synced += 1
 

@@ -19,6 +19,7 @@ struct ScanFlowView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var location = LocationManager.shared
     @StateObject private var lidar = LiDARScanner()
+    @StateObject private var sensors = SensorCollector()
 
     @State private var step: ScanStep = .camera
     @State private var capturedImage: UIImage? = nil
@@ -320,6 +321,7 @@ struct ScanFlowView: View {
     private func validateImage() {
         guard let image = capturedImage else { return }
         step = .validating
+        sensors.startCollecting()
         Task {
             do {
                 let result = try await APIService.shared.validateImage(image: image, useCaseId: useCase.id)
@@ -358,6 +360,9 @@ struct ScanFlowView: View {
     private func uploadDetection() {
         guard let image = capturedImage, let loc = location.location else { return }
         step = .uploading
+        // Capture sensor snapshot before upload
+        let sensorSnapshot = sensors.snapshot(location: loc, arFrame: lidar.latestARFrame)
+        sensors.stopCollecting()
         Task {
             do {
                 let ply = lidar.scannedData?.toPLY()
@@ -367,7 +372,8 @@ struct ScanFlowView: View {
                     image: image,
                     pointCloudData: ply,
                     useCaseId: useCase.id,
-                    imageCaption: validationCaption
+                    imageCaption: validationCaption,
+                    sensorData: sensorSnapshot
                 )
                 await MainActor.run {
                     step = .success(result.ticket_id, result.is_new_ticket)
