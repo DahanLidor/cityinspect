@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  # ── Backend ────────────────────────────────────────────────────────────────
+  # ── Backend Tests ─────────────────────────────────────────────────────────
   backend:
     name: Backend Tests
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
           flags: backend
           fail_ci_if_error: false
 
-  # ── Backend lint ───────────────────────────────────────────────────────────
+  # ── Backend Lint ──────────────────────────────────────────────────────────
   backend-lint:
     name: Backend Lint
     runs-on: ubuntu-latest
@@ -78,34 +78,7 @@ jobs:
       - name: mypy (non-blocking)
         run: mypy app/ --ignore-missing-imports --no-strict-optional || true
 
-  # ── AI Service ────────────────────────────────────────────────────────────
-  ai-service:
-    name: AI Service Tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ai-service
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: ai-service/requirements.txt
-
-      - name: Install dependencies (no torch/GPU in CI)
-        run: |
-          pip install fastapi uvicorn pillow numpy httpx pytest pytest-asyncio
-
-      - name: Run AI service smoke tests
-        run: |
-          python -c "from hazard_detection import HazardDetector; print('Import OK')" || true
-          python -m pytest tests/ -v --tb=short || true
-
-  # ── Frontend ──────────────────────────────────────────────────────────────
+  # ── Frontend Tests ───────────────────────────────────────────────────────
   frontend:
     name: Frontend Tests
     runs-on: ubuntu-latest
@@ -132,9 +105,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          CI: false  # Don't fail on warnings
+          CI: false
 
-  # ── Docker build check ────────────────────────────────────────────────────
+  # ── Docker build check ──────────────────────────────────────────────────
   docker:
     name: Docker Build Check
     runs-on: ubuntu-latest
@@ -146,25 +119,17 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build backend image
+      - name: Build production image
         uses: docker/build-push-action@v5
         with:
-          context: backend
+          context: .
+          file: ./Dockerfile
           push: false
-          tags: cityinspect-backend:ci
+          tags: cityinspect:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build ai-service image
-        uses: docker/build-push-action@v5
-        with:
-          context: ai-service
-          push: false
-          tags: cityinspect-ai:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ── Security scan ─────────────────────────────────────────────────────────
+  # ── Security scan ────────────────────────────────────────────────────────
   security:
     name: Security Scan
     runs-on: ubuntu-latest

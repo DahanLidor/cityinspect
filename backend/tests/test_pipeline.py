@@ -60,9 +60,10 @@ async def test_pipeline_updates_status(db: AsyncSession, pipeline_detection):
     assert "score" in result
     assert result["score"]["final_score"] > 0
 
-    # Reload detection and check pipeline_status
-    refreshed = (await db.execute(select(Detection).where(Detection.id == detection.id))).scalar_one()
-    assert refreshed.pipeline_status == "done"
+    # Check pipeline_status via raw SQL (bypasses ORM cache)
+    from sqlalchemy import text as _text
+    row = (await db.execute(_text(f"SELECT pipeline_status FROM detections WHERE id={detection.id}"))).fetchone()
+    assert row[0] == "done"
 
 
 @pytest.mark.asyncio
@@ -77,8 +78,9 @@ async def test_pipeline_marks_error_on_failure(db: AsyncSession, pipeline_detect
                 "", "", {},
             )
 
-    refreshed = (await db.execute(select(Detection).where(Detection.id == detection.id))).scalar_one()
-    assert refreshed.pipeline_status == "error"
+    from sqlalchemy import text as _text
+    row = (await db.execute(_text(f"SELECT pipeline_status FROM detections WHERE id={detection.id}"))).fetchone()
+    assert row[0] == "error"
 
 
 @pytest.mark.asyncio

@@ -69,8 +69,15 @@ async def agent_dedup(
         # --- GPS + time proximity ---
         dist = _haversine(lat, lng, row.lat, row.lng)
         detected_at = row.detected_at
-        # Handle both naive and aware datetimes
-        if detected_at and detected_at.tzinfo is None:
+        # Handle string dates (SQLite returns strings)
+        if isinstance(detected_at, str):
+            from datetime import datetime as _dt
+            try:
+                detected_at = _dt.fromisoformat(detected_at.replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                detected_at = None
+        # Handle naive datetimes
+        if detected_at and hasattr(detected_at, 'tzinfo') and detected_at.tzinfo is None:
             detected_at = detected_at.replace(tzinfo=timezone.utc)
 
         recently = detected_at and detected_at >= cutoff if detected_at else False

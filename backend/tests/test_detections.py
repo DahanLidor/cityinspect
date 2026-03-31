@@ -19,9 +19,9 @@ def test_haversine_same_point():
 
 
 def test_haversine_known_distance():
-    # Tel Aviv to Jerusalem ≈ 60 km
+    # Tel Aviv to Jerusalem ≈ 54 km
     dist = haversine(32.0853, 34.7818, 31.7683, 35.2137)
-    assert 55_000 < dist < 70_000
+    assert 50_000 < dist < 70_000
 
 
 def test_haversine_30m():

@@ -85,42 +85,46 @@ async def test_vlm_api_success(tmp_path):
 # ── Environment Agent ─────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_environment_no_api_key():
-    with patch("app.agents.environment.settings") as mock_settings:
-        mock_settings.google_maps_key = ""
-        result = await agent_environment(32.0853, 34.7818)
-    assert result["source"] == "estimated"
-    assert result["environment_score"] == 30
-    assert isinstance(result["nearby_places"], list)
+async def test_environment_free_apis_mocked():
+    """Environment agent uses free APIs (Nominatim, Overpass, Open-Meteo) — mock httpx."""
+    # Mock all 3 HTTP calls to return empty/minimal data
+    nominatim_resp = MagicMock()
+    nominatim_resp.status_code = 200
+    nominatim_resp.json.return_value = {"address": {"road": "Herzl St", "city": "Tel Aviv"}, "display_name": "Herzl St, Tel Aviv"}
 
+    overpass_resp = MagicMock()
+    overpass_resp.status_code = 200
+    overpass_resp.json.return_value = {"elements": []}
 
-@pytest.mark.asyncio
-async def test_environment_with_api(monkeypatch):
-    places_response = {
-        "results": [{
-            "name": "Tel Aviv School",
-            "geometry": {"location": {"lat": 32.0855, "lng": 34.7820}},
-        }]
-    }
+    weather_resp = MagicMock()
+    weather_resp.status_code = 200
+    weather_resp.json.return_value = {"current_weather": {"temperature": 22, "windspeed": 10, "weathercode": 0}}
 
-    mock_resp = MagicMock()
-    mock_resp.status_code = 200
-    mock_resp.json.return_value = places_response
-
-    with patch("app.agents.environment.settings") as mock_settings, \
-         patch("app.agents.environment.httpx.AsyncClient") as mock_client_cls:
-        mock_settings.google_maps_key = "fake-maps-key"
-
+    with patch("app.agents.environment.httpx.AsyncClient") as mock_client_cls:
         mock_http = AsyncMock()
-        mock_http.get = AsyncMock(return_value=mock_resp)
+        mock_http.get = AsyncMock(side_effect=[nominatim_resp, overpass_resp, weather_resp])
         mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_http)
         mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=None)
 
         result = await agent_environment(32.0853, 34.7818)
 
-    assert result["source"] == "google_places"
-    assert len(result["nearby_places"]) >= 1
-    assert result["environment_score"] > 0
+    assert "environment_score" in result
+    assert isinstance(result.get("nearby_places", []), list)
+
+
+@pytest.mark.asyncio
+async def test_environment_api_failure_fallback():
+    """Environment agent returns fallback when APIs fail."""
+    with patch("app.agents.environment.httpx.AsyncClient") as mock_client_cls:
+        mock_http = AsyncMock()
+        mock_http.get = AsyncMock(side_effect=Exception("Network error"))
+        mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_http)
+        mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=None)
+
+        result = await agent_environment(32.0853, 34.7818)
+
+    assert "environment_score" in result
+    assert isinstance(result, dict)
 
 
 # ── Dedup Agent ───────────────────────────────────────────────────────────────

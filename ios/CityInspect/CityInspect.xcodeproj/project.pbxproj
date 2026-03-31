@@ -1,0 +1,316 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1B5B59D05CDA7B386F0160B2 /* ScanFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294AACB663516C060F71810D /* ScanFlowView.swift */; };
+		44EB129CFCAE73F54582ECC1 /* CityInspectApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39849E60FD52E3A023C540D4 /* CityInspectApp.swift */; };
+		6E705C2709398ACAC31198C4 /* LiDARScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF80D6433E43672512AC5401 /* LiDARScanner.swift */; };
+		9C5AF786239C5ABFEF86D4B8 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74A0FC0B0C058708584B6374 /* APIService.swift */; };
+		B4577F598B186AA77B1D5DF2 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E0FD0335AAE49C875A609C2 /* LocationManager.swift */; };
+		B551FBDF6EE9CA759947B96F /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A32E12F07E90F4938D543C /* LoginView.swift */; };
+		E651FE43A212F360357914C8 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BABB509AD237A587322D02DD /* CameraView.swift */; };
+		F1049E3037346B962C65A919 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C04DF77756CE84F378D936D9 /* HomeView.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* SensorCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6D7E8F9001122 /* SensorCollector.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0E0FD0335AAE49C875A609C2 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		294AACB663516C060F71810D /* ScanFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlowView.swift; sourceTree = "<group>"; };
+		39849E60FD52E3A023C540D4 /* CityInspectApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityInspectApp.swift; sourceTree = "<group>"; };
+		62693DB36D2038E13FA8EDA0 /* CityInspect.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CityInspect.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		74A0FC0B0C058708584B6374 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		95A32E12F07E90F4938D543C /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		BABB509AD237A587322D02DD /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+		C04DF77756CE84F378D936D9 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		D067637FEC04F67807F3836A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		DF80D6433E43672512AC5401 /* LiDARScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiDARScanner.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C6D7E8F9001122 /* SensorCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorCollector.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1483283809F75EF115C4ED12 /* CityInspect */ = {
+			isa = PBXGroup;
+			children = (
+				74A0FC0B0C058708584B6374 /* APIService.swift */,
+				BABB509AD237A587322D02DD /* CameraView.swift */,
+				39849E60FD52E3A023C540D4 /* CityInspectApp.swift */,
+				C04DF77756CE84F378D936D9 /* HomeView.swift */,
+				D067637FEC04F67807F3836A /* Info.plist */,
+				DF80D6433E43672512AC5401 /* LiDARScanner.swift */,
+				0E0FD0335AAE49C875A609C2 /* LocationManager.swift */,
+				95A32E12F07E90F4938D543C /* LoginView.swift */,
+				294AACB663516C060F71810D /* ScanFlowView.swift */,
+				D1E2F3A4B5C6D7E8F9001122 /* SensorCollector.swift */,
+			);
+			path = CityInspect;
+			sourceTree = "<group>";
+		};
+		2ABB4CB5851D380385171D2F = {
+			isa = PBXGroup;
+			children = (
+				1483283809F75EF115C4ED12 /* CityInspect */,
+				C78D838379A8163C3D0B1199 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C78D838379A8163C3D0B1199 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				62693DB36D2038E13FA8EDA0 /* CityInspect.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		515BE7A7774D6608F6E42AE7 /* CityInspect */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 55F14A1B3062B6B1C19F59DC /* Build configuration list for PBXNativeTarget "CityInspect" */;
+			buildPhases = (
+				E61B116E2F1B94BD60C2DA33 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CityInspect;
+			packageProductDependencies = (
+			);
+			productName = CityInspect;
+			productReference = 62693DB36D2038E13FA8EDA0 /* CityInspect.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		166A2C4FF27EE601C1989DB8 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = 95AF9F7184B8071ACB357888 /* Build configuration list for PBXProject "CityInspect" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 2ABB4CB5851D380385171D2F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C78D838379A8163C3D0B1199 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				515BE7A7774D6608F6E42AE7 /* CityInspect */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E61B116E2F1B94BD60C2DA33 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9C5AF786239C5ABFEF86D4B8 /* APIService.swift in Sources */,
+				E651FE43A212F360357914C8 /* CameraView.swift in Sources */,
+				44EB129CFCAE73F54582ECC1 /* CityInspectApp.swift in Sources */,
+				F1049E3037346B962C65A919 /* HomeView.swift in Sources */,
+				6E705C2709398ACAC31198C4 /* LiDARScanner.swift in Sources */,
+				B4577F598B186AA77B1D5DF2 /* LocationManager.swift in Sources */,
+				B551FBDF6EE9CA759947B96F /* LoginView.swift in Sources */,
+				1B5B59D05CDA7B386F0160B2 /* ScanFlowView.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* SensorCollector.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		14B8105C81628E3F28354325 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 6574FWYF8U;
+				INFOPLIST_FILE = CityInspect/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5135C1C4C4AE829F8DD27898 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 6574FWYF8U;
+				INFOPLIST_FILE = CityInspect/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		798ECC4E122B77937E5AF332 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cityinspect.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		7F0637C33B4D44E3FF138529 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cityinspect.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		55F14A1B3062B6B1C19F59DC /* Build configuration list for PBXNativeTarget "CityInspect" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14B8105C81628E3F28354325 /* Debug */,
+				5135C1C4C4AE829F8DD27898 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		95AF9F7184B8071ACB357888 /* Build configuration list for PBXProject "CityInspect" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7F0637C33B4D44E3FF138529 /* Debug */,
+				798ECC4E122B77937E5AF332 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 166A2C4FF27EE601C1989DB8 /* Project object */;
+}
