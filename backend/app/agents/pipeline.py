@@ -95,17 +95,32 @@ async def run_pipeline(
             },
         )
 
-        # Update ticket severity, type & score
+        # Update ticket severity & score.
+        # IMPORTANT: Do NOT override defect_type — the user's choice takes priority.
+        # The VLM suggestion is stored in notes.vlm.hazard_type for reference only.
         severity = score_result["severity"]
         final_score = score_result["final_score"]
         if severity not in ("duplicate", "none"):
-            db_type = _HAZARD_TYPE_MAP.get(vlm_result.get("hazard_type", ""), None)
-            if db_type:
-                await db.execute(
-                    text("UPDATE tickets SET severity=:sev, defect_type=:dtype, score=:score WHERE id=:tid"),
-                    {"sev": severity, "dtype": db_type, "score": final_score, "tid": ticket_id},
-                )
+            # Only override defect_type if ticket currently has "unknown"
+            row = (await db.execute(
+                text("SELECT defect_type FROM tickets WHERE id=:tid"), {"tid": ticket_id}
+            )).fetchone()
+            current_type = row[0] if row else ""
+
+            if current_type in ("unknown", "", None):
+                db_type = _HAZARD_TYPE_MAP.get(vlm_result.get("hazard_type", ""), None)
+                if db_type:
+                    await db.execute(
+                        text("UPDATE tickets SET severity=:sev, defect_type=:dtype, score=:score WHERE id=:tid"),
+                        {"sev": severity, "dtype": db_type, "score": final_score, "tid": ticket_id},
+                    )
+                else:
+                    await db.execute(
+                        text("UPDATE tickets SET severity=:sev, score=:score WHERE id=:tid"),
+                        {"sev": severity, "score": final_score, "tid": ticket_id},
+                    )
             else:
+                # User already chose a type — only update severity + score
                 await db.execute(
                     text("UPDATE tickets SET severity=:sev, score=:score WHERE id=:tid"),
                     {"sev": severity, "score": final_score, "tid": ticket_id},
