@@ -1,14 +1,12 @@
 """
 Google Drive integration — creates a folder per ticket with image, PLY, and JSON.
 
+Uses OAuth2 refresh token for personal Google Drive (works with free Gmail).
+
 Setup:
-  1. Create a Google Cloud project → enable Drive API
-  2. Create a Service Account → download JSON key
-  3. Share your Drive folder with the service account email
-  4. Set env vars:
-     GOOGLE_DRIVE_ENABLED=true
-     GOOGLE_SERVICE_ACCOUNT_FILE=/path/to/service_account.json
-     GOOGLE_DRIVE_FOLDER_ID=<root folder id from Drive URL>
+  1. Run: python3 -m app.services.drive_service --setup
+  2. Follow the browser auth flow
+  3. Saves refresh token to .env automatically
 """
 from __future__ import annotations
 
@@ -28,33 +26,57 @@ _drive_service = None
 
 
 def _get_drive():
-    """Lazy-init Google Drive API client. Supports file path OR raw JSON string."""
+    """Lazy-init Google Drive API client using service account OR OAuth refresh token."""
     global _drive_service
     if _drive_service is not None:
         return _drive_service
 
-    from google.oauth2 import service_account
     from googleapiclient.discovery import build
 
-    scopes = ["https://www.googleapis.com/auth/drive.file"]
+    # Option 1: Service account with JSON (for Workspace accounts)
+    sa_json = settings.google_service_account_json
+    sa_file = settings.google_service_account_file
 
-    # Option 1: raw JSON string (for Railway / Docker)
-    if settings.google_service_account_json:
-        import json as _json
-        info = _json.loads(settings.google_service_account_json)
-        creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
-    # Option 2: file path (for local dev)
-    elif settings.google_service_account_file and os.path.exists(settings.google_service_account_file):
-        creds = service_account.Credentials.from_service_account_file(
-            settings.google_service_account_file, scopes=scopes,
+    if sa_json or (sa_file and os.path.exists(sa_file)):
+        from google.oauth2 import service_account
+        scopes = ["https://www.googleapis.com/auth/drive"]
+
+        if sa_json:
+            info = json.loads(sa_json)
+            creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
+        else:
+            creds = service_account.Credentials.from_service_account_file(sa_file, scopes=scopes)
+
+        # If impersonation target is set, delegate
+        impersonate = os.environ.get("GOOGLE_DRIVE_IMPERSONATE", "")
+        if impersonate:
+            creds = creds.with_subject(impersonate)
+
+        _drive_service = build("drive", "v3", credentials=creds)
+        logger.info("Google Drive API initialized (service account)")
+        return _drive_service
+
+    # Option 2: OAuth refresh token (for personal Gmail)
+    refresh_token = settings.google_drive_refresh_token
+    client_id = settings.google_oauth_client_id
+    client_secret = settings.google_oauth_client_secret
+
+    if refresh_token and client_id and client_secret:
+        from google.oauth2.credentials import Credentials
+        creds = Credentials(
+            token=None,
+            refresh_token=refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=["https://www.googleapis.com/auth/drive"],
         )
-    else:
-        logger.warning("Drive: no credentials configured")
-        return None
+        _drive_service = build("drive", "v3", credentials=creds)
+        logger.info("Google Drive API initialized (OAuth refresh token)")
+        return _drive_service
 
-    _drive_service = build("drive", "v3", credentials=creds)
-    logger.info("Google Drive API initialized")
-    return _drive_service
+    logger.warning("Drive: no credentials configured")
+    return None
 
 
 def _create_folder(name: str, parent_id: str) -> str:
@@ -70,7 +92,7 @@ def _create_folder(name: str, parent_id: str) -> str:
 
 
 def _upload_file(name: str, data: bytes, mime: str, folder_id: str) -> str:
-    """Upload a file to a Drive folder, return its ID."""
+    """Upload a file to a Drive folder, return its web link."""
     from googleapiclient.http import MediaIoBaseUpload
 
     drive = _get_drive()
@@ -196,3 +218,46 @@ def _safe_json(raw: str | dict) -> dict:
         return json.loads(raw or "{}")
     except (json.JSONDecodeError, TypeError):
         return {}
+
+
+# ── CLI: One-time OAuth setup ────────────────────────────────────────────────
+
+def _run_oauth_setup():
+    """Interactive: get OAuth refresh token for personal Gmail Drive access."""
+    print("\n=== Google Drive OAuth Setup ===\n")
+    print("1. Go to: https://console.cloud.google.com/apis/credentials")
+    print("2. Create OAuth Client ID → Desktop App")
+    print("3. Enter the Client ID and Secret below:\n")
+
+    client_id = input("Client ID: ").strip()
+    client_secret = input("Client Secret: ").strip()
+
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    flow = InstalledAppFlow.from_client_config(
+        {
+            "installed": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": ["http://localhost"],
+            }
+        },
+        scopes=["https://www.googleapis.com/auth/drive"],
+    )
+    creds = flow.run_local_server(port=0)
+
+    print(f"\n✅ Success! Add these to your .env:\n")
+    print(f"GOOGLE_OAUTH_CLIENT_ID={client_id}")
+    print(f"GOOGLE_OAUTH_CLIENT_SECRET={client_secret}")
+    print(f"GOOGLE_DRIVE_REFRESH_TOKEN={creds.refresh_token}")
+    print()
+
+
+if __name__ == "__main__":
+    import sys
+    if "--setup" in sys.argv:
+        _run_oauth_setup()
+    else:
+        print("Usage: python3 -m app.services.drive_service --setup")

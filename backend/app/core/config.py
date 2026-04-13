@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     google_drive_folder_id: str = ""           # Root folder ID in Drive
     google_service_account_file: str = ""      # Path to service_account.json
     google_service_account_json: str = ""      # OR: raw JSON string (for Railway/Docker)
+    google_oauth_client_id: str = ""           # OAuth client ID (for personal Gmail)
+    google_oauth_client_secret: str = ""       # OAuth client secret
+    google_drive_refresh_token: str = ""       # OAuth refresh token
 
     @property
     def async_database_url(self) -> str:
