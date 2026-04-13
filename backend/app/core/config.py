@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     whatsapp_phone_number_id: str = ""
     whatsapp_verify_token: str = "cityinspect_dev"
 
+    # ── Google Drive ─────────────────────────────────────────
+    google_drive_enabled: bool = False
+    google_drive_folder_id: str = ""           # Root folder ID in Drive
+    google_service_account_file: str = ""      # Path to service_account.json
+
     @property
     def async_database_url(self) -> str:
         """Normalise DATABASE_URL to an async-compatible driver."""

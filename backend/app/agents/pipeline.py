@@ -5,6 +5,7 @@ Called from background tasks (Celery worker or asyncio.create_task).
 from __future__ import annotations
 
 import json
+import os
 from typing import Any, Dict
 
 from sqlalchemy import text
@@ -128,6 +129,35 @@ async def run_pipeline(
 
         await db.commit()
         logger.info("Pipeline complete", extra={"detection_id": detection_id, "score": score_result["final_score"]})
+
+        # ── Export to Google Drive ──────────────────────────────────────────
+        try:
+            from app.services.drive_service import export_ticket_to_drive
+            from app.core.config import get_settings as _gs
+            _settings = _gs()
+
+            if _settings.google_drive_enabled:
+                # Fetch full ticket + detection rows for the JSON report
+                t_row = (await db.execute(text("SELECT * FROM tickets WHERE id=:id"), {"id": ticket_id})).mappings().first()
+                d_row = (await db.execute(text("SELECT * FROM detections WHERE id=:id"), {"id": detection_id})).mappings().first()
+
+                if t_row and d_row:
+                    # Resolve local file paths
+                    img_path = None
+                    if image_url and image_url.startswith("/uploads/"):
+                        img_path = os.path.join(_settings.upload_path, image_url.replace("/uploads/", ""))
+
+                    ply_path = None
+                    ply_url = d_row.get("point_cloud_url", "")
+                    if ply_url and ply_url.startswith("/uploads/"):
+                        ply_path = os.path.join(_settings.upload_path, ply_url.replace("/uploads/", ""))
+
+                    notes_dict = {"vlm": vlm_result, "environment": env_result, "dedup": dedup_result, "scorer": score_result}
+                    drive_url = export_ticket_to_drive(dict(t_row), dict(d_row), notes_dict, img_path, ply_path)
+                    if drive_url:
+                        logger.info("Drive export OK", extra={"url": drive_url})
+        except Exception as drive_exc:
+            logger.warning("Drive export failed (non-fatal): %s", drive_exc)
 
         return {
             "detection_id": detection_id,
