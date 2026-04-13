@@ -7,7 +7,6 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,7 +42,7 @@ class PeopleEngine:
             select(Person)
             .where(Person.city_id == city_id)
             .where(Person.role == role)
-            .where(Person.is_active == True)
+            .where(Person.is_active)
         )
         if exclude_ids:
             query = query.where(Person.id.notin_(exclude_ids))
@@ -72,7 +71,7 @@ class PeopleEngine:
         return await self.db.get(Person, person.manager_id)
 
     async def get_subordinates(self, person: Person, role: str | None = None) -> list[Person]:
-        query = select(Person).where(Person.manager_id == person.id).where(Person.is_active == True)
+        query = select(Person).where(Person.manager_id == person.id).where(Person.is_active)
         if role:
             query = query.where(Person.role == role)
         result = await self.db.execute(query)

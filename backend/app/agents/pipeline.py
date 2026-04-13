@@ -132,8 +132,8 @@ async def run_pipeline(
 
         # ── Export to Google Drive ──────────────────────────────────────────
         try:
-            from app.services.drive_service import export_ticket_to_drive
             from app.core.config import get_settings as _gs
+            from app.services.drive_service import export_ticket_to_drive
             _settings = _gs()
 
             if _settings.google_drive_enabled:

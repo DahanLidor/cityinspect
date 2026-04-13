@@ -4,12 +4,18 @@ SQLAlchemy ORM models — כולל מודלים חדשים:
 """
 from __future__ import annotations
 
-from datetime import datetime, date, timezone
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from sqlalchemy import (
-    Boolean, Date, DateTime, Float, ForeignKey,
-    Integer, String, Text, func,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
 )
 from sqlalchemy.orm import Mapped, MappedColumn, relationship
 

@@ -10,7 +10,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.events import bus, Events
+from app.core.events import Events, bus
 from app.models import Conversation, Person, Ticket
 from app.services.comms.whatsapp import whatsapp_bot
 from app.services.workflow.engine import WorkflowEngine
@@ -166,7 +166,7 @@ class InboundHandler:
 
     async def _find_person(self, whatsapp_id: str) -> Person | None:
         result = await self.db.execute(
-            select(Person).where(Person.whatsapp_id == whatsapp_id).where(Person.is_active == True)
+            select(Person).where(Person.whatsapp_id == whatsapp_id).where(Person.is_active)
         )
         return result.scalars().first()
 

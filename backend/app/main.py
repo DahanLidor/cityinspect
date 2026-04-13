@@ -19,8 +19,20 @@ from app.core.database import create_tables
 from app.core.events import bus
 from app.core.logging import get_logger, setup_logging
 from app.core.security import decode_token
-from app.routers import auth, detections, pipeline, stats, tickets, work_orders
-from app.routers import admin_chat, daily_plans, people, whatsapp, workflow, use_cases
+from app.routers import (
+    admin_chat,
+    auth,
+    daily_plans,
+    detections,
+    people,
+    pipeline,
+    stats,
+    tickets,
+    use_cases,
+    whatsapp,
+    work_orders,
+    workflow,
+)
 from app.ws.hub import hub
 
 settings = get_settings()
@@ -117,6 +129,7 @@ def create_app() -> FastAPI:
         await create_tables()
         # Incremental migrations: add new columns if they don't exist
         from sqlalchemy import text as _text
+
         from app.core.database import _engine as _eng
         for stmt in [
             # users

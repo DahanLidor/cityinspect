@@ -35,7 +35,7 @@ async def stats_summary(
 
     # SLA breaches
     sla_result = await db.execute(
-        select(func.count(Ticket.id)).where(Ticket.sla_breached == True)
+        select(func.count(Ticket.id)).where(Ticket.sla_breached)
     )
     sla_breached = sla_result.scalar() or 0
 
@@ -52,7 +52,7 @@ async def stats_summary(
     # Detections last hour (approximate from ticket updated_at)
     det_result = await db.execute(select(Detection))
     detections = det_result.scalars().all()
-    one_hour_ago = datetime.now(timezone.utc).replace(microsecond=0)
+    datetime.now(timezone.utc).replace(microsecond=0)
     def _seconds_ago(dt: datetime) -> float:
         if dt is None:
             return float("inf")

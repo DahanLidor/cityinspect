@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-const BASE_WS = process.env.REACT_APP_WS_URL ||
+const BASE_WS =
   (window.location.protocol === 'https:' ? 'wss' : 'ws') +
-  '://' + (process.env.REACT_APP_API_HOST || 'localhost:8000') + '/ws';
+  '://' + window.location.host + '/ws';
 
 export function useWebSocket(onMessage) {
   const ws = useRef(null);

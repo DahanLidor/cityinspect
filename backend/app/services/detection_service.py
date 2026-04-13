@@ -3,7 +3,6 @@ Detection creation logic: compute geometry, persist, queue pipeline.
 """
 from __future__ import annotations
 
-import json
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession

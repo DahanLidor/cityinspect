@@ -12,13 +12,13 @@ import anthropic
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import DbSession
 from app.core.security import get_current_user
-from app.models import Detection, Ticket, User, WorkflowStep
+from app.models import Ticket, User, WorkflowStep
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -51,7 +51,7 @@ async def _build_system_prompt(db: AsyncSession, city_id: str) -> str:
     sla_breached = (await db.execute(
         select(func.count(Ticket.id))
         .where(Ticket.city_id == city_id)
-        .where(Ticket.sla_breached == True)
+        .where(Ticket.sla_breached)
     )).scalar() or 0
 
     overdue_steps = (await db.execute(

@@ -15,16 +15,16 @@ from __future__ import annotations
 
 import json
 import math
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import Any
 
 import anthropic
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
-from app.models import Detection, DailyPlan, Person, SystemConfig, Ticket
+from app.models import DailyPlan, Detection, Person, SystemConfig, Ticket
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -67,7 +67,7 @@ async def _get_open_tickets_for_worker(
 ) -> list[dict]:
     """Find open tickets matching worker's skills within work radius."""
     specialties = json.loads(person.specialties_json or "[]")
-    skills = json.loads(person.skills_json or "[]")
+    json.loads(person.skills_json or "[]")
     radius_km = config.get("work_radius_km", 15)
 
     # Get all open/in-progress tickets for the city

@@ -4,12 +4,12 @@ Auth routes: login + /me.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 
 from app.core.database import DbSession
 from app.core.security import create_access_token, get_current_user, verify_password
 from app.models import User
 from app.schemas import AuthResponse, LoginRequest, UserOut
-from sqlalchemy import select
 
 router = APIRouter(prefix="/api/v1", tags=["auth"])
 

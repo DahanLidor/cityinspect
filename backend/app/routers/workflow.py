@@ -7,7 +7,7 @@ import json
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -246,7 +246,7 @@ async def verify_ticket(
     if not person_id:
         # Try the ticket's city first, then any city (fallback for demo/default city)
         for city_filter in [ticket.city_id, None]:
-            q = sa_select(Person).where(Person.role == open_step.owner_role).where(Person.is_active == True)
+            q = sa_select(Person).where(Person.role == open_step.owner_role).where(Person.is_active)
             if city_filter is not None:
                 q = q.where(Person.city_id == city_filter)
             mgr_result = await db.execute(q)

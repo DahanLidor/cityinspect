@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import base64
 import pathlib
-from typing import Optional
 
 import anthropic
 import yaml

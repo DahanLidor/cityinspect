@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 from datetime import date, datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -71,7 +70,7 @@ async def list_workers(
     result = await db.execute(
         select(Person)
         .where(Person.city_id == city_id)
-        .where(Person.is_active == True)
+        .where(Person.is_active)
         .where(Person.role.in_(["contractor", "field_worker", "inspector", "work_manager"]))
         .order_by(Person.role, Person.name)
     )

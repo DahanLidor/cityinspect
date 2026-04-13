@@ -59,7 +59,7 @@ export default function MapView({ onSelectTicket, wsEvent }) {
 
     // Load tickets
     getTickets({ limit: 200 }).then(data => {
-      setTickets(data);
+      setTickets(Array.isArray(data) ? data : (data.items || []));
     });
 
     // CSS for pulse
@@ -96,7 +96,7 @@ export default function MapView({ onSelectTicket, wsEvent }) {
   useEffect(() => {
     if (!wsEvent) return;
     if (wsEvent.type === 'new_detection' || wsEvent.type === 'ticket_created') {
-      getTickets({ limit: 200 }).then(setTickets);
+      getTickets({ limit: 200 }).then(data => setTickets(Array.isArray(data) ? data : (data.items || [])));
     }
     if (wsEvent.type === 'ticket_updated') {
       setTickets(prev => prev.map(t =>

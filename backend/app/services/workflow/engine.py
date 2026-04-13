@@ -15,7 +15,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.events import bus, Events
+from app.core.events import Events, bus
 from app.models import AuditLog, Conversation, Person, Ticket, WorkflowStep
 from app.services.workflow.protocol_loader import protocol_loader
 
@@ -420,7 +420,7 @@ class WorkflowEngine:
             select(Person)
             .where(Person.city_id == city_id)
             .where(Person.role == role)
-            .where(Person.is_active == True)
+            .where(Person.is_active)
             .order_by(Person.current_workload.asc())
         )
         return result.scalars().first()
@@ -471,7 +471,7 @@ class WorkflowEngine:
             select(Person)
             .where(Person.city_id == ticket.city_id)
             .where(Person.role == timed_out_step.owner_role)
-            .where(Person.is_active == True)
+            .where(Person.is_active)
             .where(Person.id != timed_out_step.owner_person_id)
             .order_by(Person.current_workload.asc())
         )

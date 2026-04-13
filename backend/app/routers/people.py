@@ -67,7 +67,7 @@ async def list_people(
     if role:
         query = query.where(Person.role == role)
     if active_only:
-        query = query.where(Person.is_active == True)
+        query = query.where(Person.is_active)
     query = query.order_by(Person.role, Person.name)
 
     result = await db.execute(query)

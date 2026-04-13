@@ -4,7 +4,7 @@ Ticket routes: list (paginated + filtered), get, patch.
 from __future__ import annotations
 
 import math
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select

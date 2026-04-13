@@ -1,5 +1,12 @@
 import '@testing-library/jest-dom';
 
+// Polyfill ResizeObserver (recharts needs it, jsdom doesn't have it)
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 // Mock leaflet (no DOM canvas in test env)
 vi.mock('leaflet', () => ({
   default: {
