@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     google_drive_enabled: bool = False
     google_drive_folder_id: str = ""           # Root folder ID in Drive
     google_service_account_file: str = ""      # Path to service_account.json
+    google_service_account_json: str = ""      # OR: raw JSON string (for Railway/Docker)
 
     @property
     def async_database_url(self) -> str:

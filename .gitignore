@@ -37,3 +37,4 @@ Thumbs.db
 *.onnx
 *.db
 backend/uploads/
+service_account.json

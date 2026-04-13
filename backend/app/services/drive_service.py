@@ -28,22 +28,30 @@ _drive_service = None
 
 
 def _get_drive():
-    """Lazy-init Google Drive API client."""
+    """Lazy-init Google Drive API client. Supports file path OR raw JSON string."""
     global _drive_service
     if _drive_service is not None:
         return _drive_service
 
-    if not settings.google_service_account_file or not os.path.exists(settings.google_service_account_file):
-        logger.warning("Drive: service account file not found: %s", settings.google_service_account_file)
-        return None
-
     from google.oauth2 import service_account
     from googleapiclient.discovery import build
 
-    creds = service_account.Credentials.from_service_account_file(
-        settings.google_service_account_file,
-        scopes=["https://www.googleapis.com/auth/drive.file"],
-    )
+    scopes = ["https://www.googleapis.com/auth/drive.file"]
+
+    # Option 1: raw JSON string (for Railway / Docker)
+    if settings.google_service_account_json:
+        import json as _json
+        info = _json.loads(settings.google_service_account_json)
+        creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
+    # Option 2: file path (for local dev)
+    elif settings.google_service_account_file and os.path.exists(settings.google_service_account_file):
+        creds = service_account.Credentials.from_service_account_file(
+            settings.google_service_account_file, scopes=scopes,
+        )
+    else:
+        logger.warning("Drive: no credentials configured")
+        return None
+
     _drive_service = build("drive", "v3", credentials=creds)
     logger.info("Google Drive API initialized")
     return _drive_service
