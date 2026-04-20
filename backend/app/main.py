@@ -26,6 +26,7 @@ from app.routers import (
     detections,
     people,
     pipeline,
+    reports,
     stats,
     tickets,
     use_cases,
@@ -68,7 +69,7 @@ def create_app() -> FastAPI:
         auth.router, detections.router, tickets.router, stats.router,
         work_orders.router, pipeline.router,
         people.router, workflow.router, whatsapp.router, admin_chat.router,
-        use_cases.router, daily_plans.router,
+        use_cases.router, daily_plans.router, reports.router,
     ]:
         app.include_router(router)
 
