@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
-import { getStats } from '../api/client';
+import { getStats, getCityHealth } from '../api/client';
+
+const GRADE_COLORS = {
+  A: 'text-green-400 bg-green-950/50 border-green-700',
+  B: 'text-blue-400 bg-blue-950/50 border-blue-700',
+  C: 'text-yellow-400 bg-yellow-950/50 border-yellow-700',
+  D: 'text-orange-400 bg-orange-950/50 border-orange-700',
+  F: 'text-red-400 bg-red-950/50 border-red-700',
+};
 
 export default function StatsBar({ wsEvent }) {
   const [stats, setStats] = useState(null);
+  const [health, setHealth] = useState(null);
 
-  const load = () => getStats().then(setStats).catch(() => {});
+  const load = () => {
+    getStats().then(setStats).catch(() => {});
+    getCityHealth().then(setHealth).catch(() => {});
+  };
 
   useEffect(() => { load(); }, []);
   useEffect(() => { if (wsEvent) load(); }, [wsEvent]);
@@ -15,6 +27,9 @@ export default function StatsBar({ wsEvent }) {
       <div className="text-slate-500 text-sm animate-pulse">טוען נתונים...</div>
     </div>
   );
+
+  const grade = health?.health?.grade || '—';
+  const gradeStyle = GRADE_COLORS[grade] || 'text-slate-400 bg-slate-900 border-slate-700';
 
   const cards = [
     {
@@ -60,6 +75,22 @@ export default function StatsBar({ wsEvent }) {
 
   return (
     <div className="h-16 bg-slate-900 border-b border-slate-800 flex items-stretch px-4 gap-0 shrink-0 overflow-x-auto">
+      {/* City Health Score — first card */}
+      {health?.health && (
+        <div className={`flex items-center gap-2 px-4 border-r border-slate-800 shrink-0 ${gradeStyle.split(' ').slice(1).join(' ')}`}>
+          <div className="text-center">
+            <div className={`text-2xl font-black font-mono leading-none ${gradeStyle.split(' ')[0]}`}>
+              {grade}
+            </div>
+            <div className="text-slate-500 text-xs">בריאות</div>
+          </div>
+          <div className="hidden lg:block">
+            <div className="text-white text-sm font-bold font-mono">{health.health.health_score}/100</div>
+            <div className="text-slate-500 text-xs">{health.health.metrics?.defect_trend === 'declining' ? '📉 ירידה' : health.health.metrics?.defect_trend === 'rising' ? '📈 עלייה' : '➡️ יציב'}</div>
+          </div>
+        </div>
+      )}
+
       {cards.map(c => (
         <div
           key={c.label}

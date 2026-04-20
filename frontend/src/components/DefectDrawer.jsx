@@ -30,13 +30,153 @@ const STATUS_LABELS = {
   in_progress: '🔧 בביצוע', resolved: '✔️ טופל',
 };
 
-// ── AI Pipeline notes parser ──────────────────────────────────────────────────
+// ── AI Pipeline notes parser (10-agent) ──────────────────────────────────────
+function RiskBadge({ level }) {
+  const cfg = { critical: 'bg-red-600 text-white', high: 'bg-orange-500 text-white', medium: 'bg-yellow-500 text-black', low: 'bg-green-600 text-white' };
+  return <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${cfg[level] || 'bg-slate-600 text-white'}`}>{level}</span>;
+}
+
+function GradeBadge({ grade }) {
+  const cfg = { A: 'bg-green-600', B: 'bg-blue-600', C: 'bg-yellow-500', D: 'bg-red-600' };
+  return <span className={`text-xs px-2 py-0.5 rounded-full font-bold text-white ${cfg[grade] || 'bg-slate-600'}`}>{grade}</span>;
+}
+
+function RiskCard({ risk }) {
+  if (!risk || !risk.risk_score) return null;
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-3">
+      <div className="text-red-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">⚠️ חיזוי סיכון</div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-2xl font-bold text-white">{risk.risk_score}<span className="text-xs text-slate-400">/100</span></div>
+        <RiskBadge level={risk.risk_level} />
+      </div>
+      {risk.liability_exposure_nis_monthly > 0 && (
+        <div className="text-xs text-orange-300 bg-orange-950/50 rounded-lg px-2 py-1 mb-2">
+          💰 חשיפת תביעות: ₪{risk.liability_exposure_nis_monthly?.toLocaleString()}/חודש
+        </div>
+      )}
+      {risk.recommendation && <div className="text-xs text-slate-300">{risk.recommendation}</div>}
+    </div>
+  );
+}
+
+function RepairCard({ repair }) {
+  if (!repair || repair.method === 'manual_assessment') return null;
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-3">
+      <div className="text-green-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">🔧 המלצת תיקון</div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-white text-sm font-semibold">{repair.method_he || repair.method}</div>
+        <div className="text-green-400 font-bold text-sm">₪{repair.estimated_cost_nis?.toLocaleString()}</div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-2">
+        <div>⏱️ {repair.estimated_hours} שעות</div>
+        <div>👥 {repair.team_size} עובדים</div>
+      </div>
+      {repair.materials?.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {repair.materials.map((m, i) => (
+            <span key={i} className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
+              {m.name || m} {m.quantity ? `(${m.quantity} ${m.unit || ''})` : ''}
+            </span>
+          ))}
+        </div>
+      )}
+      {repair.equipment_needed?.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {repair.equipment_needed.map((e, i) => (
+            <span key={i} className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full">🔧 {e}</span>
+          ))}
+        </div>
+      )}
+      {!repair.can_repair_today && repair.weather_warning && (
+        <div className="text-xs text-orange-300 bg-orange-950/50 rounded-lg px-2 py-1 mt-2">🌧️ {repair.weather_warning}</div>
+      )}
+    </div>
+  );
+}
+
+function GeometryCard({ geo }) {
+  if (!geo || geo.confidence === 0) return null;
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-3">
+      <div className="text-purple-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">📐 מידות משוערות</div>
+      <div className="grid grid-cols-3 gap-3 text-center">
+        <div>
+          <div className="text-lg font-bold text-white">{geo.estimated_width_cm?.toFixed(0)}</div>
+          <div className="text-xs text-slate-500">רוחב (ס"מ)</div>
+        </div>
+        <div>
+          <div className="text-lg font-bold text-white">{geo.estimated_length_cm?.toFixed(0)}</div>
+          <div className="text-xs text-slate-500">אורך (ס"מ)</div>
+        </div>
+        <div>
+          <div className="text-lg font-bold text-white">{geo.estimated_depth_cm?.toFixed(0)}</div>
+          <div className="text-xs text-slate-500">עומק (ס"מ)</div>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mt-2 text-xs text-slate-400">
+        <span>שטח: {geo.estimated_area_m2?.toFixed(2)} מ"ר</span>
+        <span>שיטה: {geo.method === 'camera_intrinsics' ? '📷 עדשה' : geo.method === 'lidar' ? '📡 LiDAR' : '📏 הערכה'}</span>
+      </div>
+    </div>
+  );
+}
+
+function TemporalCard({ temporal }) {
+  if (!temporal || temporal.tracking === 'first_observation') return null;
+  const trendIcon = temporal.trend === 'worsening' ? '📈' : temporal.trend === 'improving' ? '📉' : '➡️';
+  const trendColor = temporal.trend === 'worsening' ? 'text-red-400' : temporal.trend === 'improving' ? 'text-green-400' : 'text-slate-400';
+  const trendLabel = temporal.trend === 'worsening' ? 'מחמיר' : temporal.trend === 'improving' ? 'משתפר' : 'יציב';
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-3">
+      <div className="text-blue-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">📊 מעקב זמני</div>
+      <div className="flex items-center justify-between">
+        <div className={`text-sm font-bold ${trendColor}`}>{trendIcon} {trendLabel}</div>
+        <div className="text-xs text-slate-400">{temporal.observations} תצפיות · {temporal.days_open} ימים</div>
+      </div>
+      {temporal.alert && (
+        <div className="text-xs text-red-300 bg-red-950/50 rounded-lg px-2 py-1 mt-2">🚨 מפגע מחמיר ללא טיפול!</div>
+      )}
+    </div>
+  );
+}
+
+function FusionCard({ fusion }) {
+  if (!fusion || !fusion.overall_confidence) return null;
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-3">
+      <div className="text-cyan-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">🎯 איכות צילום</div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-white text-sm">ציון כולל: <span className="font-bold">{(fusion.overall_confidence * 100).toFixed(0)}%</span></div>
+        <GradeBadge grade={fusion.capture_grade} />
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-xs text-center">
+        <div><div className="text-slate-400">מיקום</div><div className="text-white font-mono">{(fusion.location_confidence * 100).toFixed(0)}%</div></div>
+        <div><div className="text-slate-400">תמונה</div><div className="text-white font-mono">{(fusion.image_confidence * 100).toFixed(0)}%</div></div>
+        <div><div className="text-slate-400">גיאומטריה</div><div className="text-white font-mono">{(fusion.geometry_confidence * 100).toFixed(0)}%</div></div>
+      </div>
+      {fusion.warnings?.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {fusion.warnings.map((w, i) => (
+            <span key={i} className="text-xs bg-yellow-950/50 text-yellow-300 px-2 py-0.5 rounded-full">⚠️ {w}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AIPipelineSection({ notes }) {
   let data = null;
   try { data = JSON.parse(notes); } catch { return null; }
   if (!data || typeof data !== 'object') return null;
 
-  const sections = [
+  // Rich cards for new agents
+  const hasRich = data.risk || data.repair || data.geometry || data.temporal || data.fusion;
+
+  // Fallback generic sections for VLM, environment, dedup, scorer
+  const genericSections = [
     { key: 'vlm',         icon: '🔍', title: 'VLM Agent' },
     { key: 'environment', icon: '🌍', title: 'סביבה' },
     { key: 'dedup',       icon: '🔄', title: 'כפילויות' },
@@ -45,7 +185,15 @@ function AIPipelineSection({ notes }) {
 
   return (
     <div className="space-y-2">
-      {sections.map(({ key, icon, title }) => {
+      {/* Rich cards first */}
+      {data.fusion && <FusionCard fusion={data.fusion} />}
+      {data.geometry && <GeometryCard geo={data.geometry} />}
+      {data.risk && <RiskCard risk={data.risk} />}
+      {data.repair && <RepairCard repair={data.repair} />}
+      {data.temporal && <TemporalCard temporal={data.temporal} />}
+
+      {/* Generic sections */}
+      {genericSections.map(({ key, icon, title }) => {
         const d = data[key];
         if (!d) return null;
         return (
@@ -58,7 +206,7 @@ function AIPipelineSection({ notes }) {
                 <div key={k} className="flex items-start gap-2 text-xs">
                   <span className="text-slate-500 font-mono min-w-[100px] shrink-0">{k}</span>
                   <span className="text-white break-all">
-                    {typeof v === 'object' ? JSON.stringify(v, null, 0).slice(0, 80) : String(v)}
+                    {typeof v === 'object' ? JSON.stringify(v, null, 0).slice(0, 120) : String(v)}
                   </span>
                 </div>
               ))}
@@ -66,6 +214,13 @@ function AIPipelineSection({ notes }) {
           </div>
         );
       })}
+
+      {/* Validator badge */}
+      {data.validator && (
+        <div className={`text-xs text-center py-1 rounded-lg font-mono ${data.validator.valid ? 'bg-green-950/50 text-green-400' : 'bg-red-950/50 text-red-400'}`}>
+          {data.validator.valid ? `✅ צילום תקין (${data.validator.quality_score}/100)` : `⚠️ בעיות בצילום: ${data.validator.issues?.map(i => i.type).join(', ')}`}
+        </div>
+      )}
     </div>
   );
 }

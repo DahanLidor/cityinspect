@@ -59,6 +59,10 @@ export const getPeople = (params = {}) =>
 export const getPerson = (id) =>
   api.get(`/api/v1/people/${id}`).then(r => r.data);
 
+// ── Reports / Intelligence ───────────────────────────────────────────────────
+export const getCityHealth = (cityId = 'tel-aviv') =>
+  api.get(`/api/v1/reports/city/${cityId}/summary`).then(r => r.data);
+
 // ── Daily Plans ──────────────────────────────────────────────────────────────
 export const getDailyPlanWorkers = (params = {}) =>
   api.get('/api/v1/daily-plans/workers', { params }).then(r => r.data);
